@@ -122,7 +122,7 @@ int main (int argc, char *argv[])
 
 	bool pk_only = args_info.pk_only_given;
 
-	int dangles = args_info.dangles_given ? dangle_model : 1;
+	int dangles = args_info.dangles_given ? dangle_model : 2;
 
 	cmdline_parser_free(&args_info);
 	if(fileI != ""){
