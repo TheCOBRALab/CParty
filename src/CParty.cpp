@@ -124,7 +124,6 @@ int main (int argc, char *argv[])
 
 	int dangles = args_info.dangles_given ? dangle_model : 2;
 
-	cmdline_parser_free(&args_info);
 	if(fileI != ""){
 		
 		if(exists(fileI)){
@@ -151,6 +150,8 @@ int main (int argc, char *argv[])
 	else if (seq.find('T') != std::string::npos){
 		vrna_params_load_DNA_Mathews2004();
 	}
+	
+	cmdline_parser_free(&args_info);
 
 	std::vector<Hotspot> hotspot_list;
 
