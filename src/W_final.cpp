@@ -284,8 +284,8 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 					int best_k = -1, best_row = -1;
 					int tmp= INF, min = INF;
 					for (cand_pos_t k = i+1; k <= j-1; k++){
-						tmp = V->get_energy_WM (i+1,k-1) + std::min(V->get_energy_WMv(k, j-1),V->get_energy_WMp(k, j-1)) + E_MLstem(pair[S_[j]][S_[i]],-1,-1,params_);
-							
+						
+						tmp = V->get_energy_WM (i+1,k-1) + std::min(V->get_energy_WMv(k, j-1),V->get_energy_WMp(k, j-1)) + E_MLstem(pair[S_[j]][S_[i]],-1,-1,params_) + params_->MLclosing;							
 						if (tmp < min)
 						  {
 							min = tmp;
@@ -297,7 +297,7 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 						  // do I need to check for non-canonical base pairings here as well so the dangle values not be INF??
 						if (tree.tree[i+1].pair <= -1)
 						{
-							tmp = V->get_energy_WM (i+2,k-1) + std::min(V->get_energy_WMv(k, j-1),V->get_energy_WMp(k, j-1)) + E_MLstem(pair[S_[j]][S_[i]],-1,S_[i+1],params_);
+							tmp = V->get_energy_WM (i+2,k-1) + std::min(V->get_energy_WMv(k, j-1),V->get_energy_WMp(k, j-1)) + E_MLstem(pair[S_[j]][S_[i]],-1,S_[i+1],params_) + params_->MLclosing + params_->MLbase;
 							
 							if (tmp < min)
 							{
@@ -308,7 +308,7 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 						}
 						if (tree.tree[j-1].pair <= -1)
 						{
-							tmp = V->get_energy_WM (i+1,k-1) + std::min(V->get_energy_WMv(k, j-2),V->get_energy_WMp(k, j-2)) + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],-1,params_);
+							tmp = V->get_energy_WM (i+1,k-1) + std::min(V->get_energy_WMv(k, j-2),V->get_energy_WMp(k, j-2)) + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],-1,params_) + params_->MLclosing + params_->MLbase;
 							
 							if (tmp < min)
 							{
@@ -319,9 +319,8 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 						}
 						if (tree.tree[i+1].pair <= -1 && tree.tree[j-1].pair <= -1)
 						{
-							tmp = V->get_energy_WM (i+2,k-1) + std::min(V->get_energy_WMv(k, j-2),V->get_energy_WMp(k, j-2));
+							tmp = V->get_energy_WM (i+2,k-1) + std::min(V->get_energy_WMv(k, j-2),V->get_energy_WMp(k, j-2)) + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],S_[i+1],params_) + params_->MLclosing + 2*params_->MLbase;
 							
-							tmp = tmp + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],S_[i+1],params_);
 							if (tmp < min)
 							{
 								min = tmp;
@@ -330,7 +329,7 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 							}
 						}
 
-						tmp = static_cast<energy_t>((k-i-1)*params_->MLbase + V->get_energy_WMp(k,j-1))+ E_MLstem(pair[S_[j]][S_[i]],-1,-1,params_);
+						tmp = static_cast<energy_t>((k-i-1)*params_->MLbase + V->get_energy_WMp(k,j-1))+ E_MLstem(pair[S_[j]][S_[i]],-1,-1,params_) + params_->MLclosing;
 						if (tmp < min)
 						  {
 							min = tmp;
@@ -342,7 +341,7 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 						  // do I need to check for non-canonical base pairings here as well so the dangle values not be INF??
 						if (tree.tree[i+1].pair <= -1)
 						{
-							if((k-(i+1)-1) >=0) tmp = static_cast<energy_t>((k-(i+1)-1)*params_->MLbase) + V->get_energy_WMp(k,j-1) + E_MLstem(pair[S_[j]][S_[i]],-1,S_[i+1],params_);
+							if((k-(i+1)-1) >=0) tmp = static_cast<energy_t>((k-(i+1)-1)*params_->MLbase) + V->get_energy_WMp(k,j-1) + E_MLstem(pair[S_[j]][S_[i]],-1,S_[i+1],params_) + params_->MLclosing + params_->MLbase;
 							if (tmp < min)
 							{
 								min = tmp;
@@ -352,7 +351,7 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 						}
 						if (tree.tree[j-1].pair <= -1)
 						{
-							tmp = static_cast<energy_t>((k-i-1)*params_->MLbase) + V->get_energy_WMp(k,j-2) + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],-1,params_);
+							tmp = static_cast<energy_t>((k-i-1)*params_->MLbase) + V->get_energy_WMp(k,j-2) + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],-1,params_) + params_->MLclosing + params_->MLbase;
 							if (tmp < min)
 							{
 								min = tmp;
@@ -362,7 +361,7 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
 						}
 						if (tree.tree[i+1].pair <= -1 && tree.tree[j-1].pair <= -1)
 						{
-							if((k-(i+1)-1) >=0) tmp = static_cast<energy_t>((k-(i+1)-1)*params_->MLbase) + V->get_energy_WMp(k,j-2) + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],S_[i+1],params_);
+							if((k-(i+1)-1) >=0) tmp = static_cast<energy_t>((k-(i+1)-1)*params_->MLbase) + V->get_energy_WMp(k,j-2) + E_MLstem(pair[S_[j]][S_[i]],S_[j-1],S_[i+1],params_) + params_->MLclosing + 2*params_->MLbase;
 							if (tmp < min)
 							{
 								min = tmp;

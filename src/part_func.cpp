@@ -137,21 +137,21 @@ void W_final_pf::rescale_pk_globals(){
 double W_final_pf::hfold_pf(sparse_tree &tree){
 
     for (int i = n; i >=1; --i){	
-			for (int j =i; j<=n; ++j){
-                cand_pos_t ij = index[i]+j-i;
+		for (int j =i; j<=n; ++j){
+			cand_pos_t ij = index[i]+j-i;
 
-				const bool evaluate = tree.weakly_closed(i,j);
-				const pair_type ptype_closing = pair[S_[i]][S_[j]];
-				const bool restricted = tree.tree[i].pair == -1 || tree.tree[j].pair == -1;
-				const bool paired = (tree.tree[i].pair == j && tree.tree[j].pair == i);
+			const bool evaluate = tree.weakly_closed(i,j);
+			const pair_type ptype_closing = pair[S_[i]][S_[j]];
+			const bool restricted = tree.tree[i].pair == -1 || tree.tree[j].pair == -1;
+			const bool paired = (tree.tree[i].pair == j && tree.tree[j].pair == i);
 
-				if(ptype_closing> 0 && evaluate && !restricted)
-				compute_energy_restricted (i,j,tree);
+			if(ptype_closing> 0 && evaluate && !restricted)
+			compute_energy_restricted (i,j,tree);
 
-				if(!pk_free) compute_pk_energies(i,j,tree);
+			if(!pk_free) compute_pk_energies(i,j,tree);
 
-				compute_WMv_WMp(i,j,tree.tree);
-				compute_energy_WM_restricted(i,j,tree);
+			compute_WMv_WMp(i,j,tree.tree);
+			compute_energy_WM_restricted(i,j,tree);
 		}
 
 	}
@@ -206,8 +206,8 @@ pf_t W_final_pf::exp_MLstem(cand_pos_t i, cand_pos_t j){
 pf_t W_final_pf::exp_Mbloop(cand_pos_t i, cand_pos_t j){
 	pair_type tt  = pair[S_[j]][S_[i]];
 	if(exp_params_->model_details.dangles == 1 || exp_params_->model_details.dangles == 2){
-		base_type si1 = i>1 ? S_[i-1] : -1;
-		base_type sj1 = j<n ? S_[j+1] : -1;
+		base_type si1 = i>1 ? S_[i+1] : -1;
+		base_type sj1 = j<n ? S_[j-1] : -1;
 		return exp_E_MLstem(tt,sj1,si1,exp_params_);
 	}
 	else{
@@ -273,7 +273,7 @@ void W_final_pf::compute_energy_WM_restricted (cand_pos_t i, cand_pos_t j, spars
 	cand_pos_t ij = index[(i)]+(j)-(i);
 	cand_pos_t ijminus1 = index[(i)]+(j)-1-(i);
 
-	for (cand_pos_t k=i; k < j -TURN-1; k++)
+	for (cand_pos_t k=i; k <= j -TURN-1; k++)
 	{
 		bool can_pair = tree.up[k-1] >= (k-i);
 		if(can_pair) contributions += (static_cast<pf_t>(expMLbase[k-i])*get_energy(k,j)*exp_MLstem(k,j));
@@ -294,7 +294,6 @@ pf_t W_final_pf::compute_energy_VM_restricted (cand_pos_t i, cand_pos_t j, std::
         contributions += (get_energy_WM(i+1,k-1)*get_energy_WMv(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
         contributions += (get_energy_WM(i+1,k-1)*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
         contributions += (expMLbase[k-i-1]*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
-
     }
 
 	contributions *=scale[2];
