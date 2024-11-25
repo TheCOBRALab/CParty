@@ -147,6 +147,7 @@ double W_final_pf::hfold_pf(sparse_tree &tree){
 
 			if(ptype_closing> 0 && evaluate && !restricted)
 			compute_energy_restricted (i,j,tree);
+			 
 
 			if(!pk_free) compute_pk_energies(i,j,tree);
 
@@ -593,18 +594,22 @@ void W_final_pf::compute_WMBP(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
         }
 	}
 
-
 	pf_t m3 = get_energy_VP(i,j)*expPB_penalty;
     contributions += m3; // Make sure not to use non-Partition values
 
-
     if(tree.tree[j].pair < 0 && tree.tree[i].pair >= 0){
 		energy_t tmp = INF;
+		cand_pos_t b_ij = tree.b(i,j);
 		for (cand_pos_t l = i+1; l < j; l++){
 			cand_pos_t bp_il = tree.bp(i,l);
-			if(bp_il >= 0 && bp_il < n && l+TURN <= j){
-				pf_t m4 = get_BE(i,tree.tree[i].pair,bp_il,tree.tree[bp_il].pair,tree)*get_energy_WI(bp_il+1,l-1)*get_energy_VP(l,j)*pow(expPB_penalty,2);
-				contributions += m4;
+			cand_pos_t Bp_lj = tree.Bp(l,j);
+			if(b_ij>0 && l<b_ij){
+				if(bp_il >= 0 && bp_il < n && l+TURN <= j){
+					if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
+						pf_t m4 = get_BE(i,tree.tree[i].pair,bp_il,tree.tree[bp_il].pair,tree)*get_energy_WI(bp_il+1,l-1)*get_energy_VP(l,j)*pow(expPB_penalty,2);
+						contributions += m4;
+					}
+				}
 			}
 		}
 	}
@@ -634,7 +639,9 @@ void W_final_pf::compute_WMB(cand_pos_t  i, cand_pos_t  j, sparse_tree &tree){
 		}
 	}
 
+
     contributions += get_energy_WMBP(i,j);
+
 
 	WMB[ij] = contributions;	
 }
