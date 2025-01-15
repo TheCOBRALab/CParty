@@ -33,3 +33,5 @@
 
 # build
 /build/
+bash.sh
+bashConstraint.sh
