@@ -58,7 +58,7 @@ pseudo_loop::~pseudo_loop()
  * When applied to WMBP, if all cases are 0, then we can proceed with WMBP
  * Mateo Jan 2025: Added to Fix WMBP problem
 */
-int pseudo_loop::compute_exterior_cases(cand_pos_t l, cand_pos_t j, const sparse_tree &tree){
+int pseudo_loop::compute_exterior_cases(cand_pos_t l, cand_pos_t j, sparse_tree &tree){
 	// Case 1 -> l is not covered
 	bool case1 = tree.tree[l].parent->index <= 0;
 	// Case 2 -> l is paired

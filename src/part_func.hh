@@ -127,7 +127,7 @@ class W_final_pf{
 
         pf_t compute_internal_restricted(cand_pos_t i, cand_pos_t j,std::vector<int> &up);
 
-        pf_t compute_energy_VM_restricted (cand_pos_t i, cand_pos_t j, std::vector<Node> &tree);
+        pf_t compute_energy_VM_restricted (cand_pos_t i, cand_pos_t j, std::vector<int> &up);
 
         pf_t compute_int(cand_pos_t i, cand_pos_t j, cand_pos_t k, cand_pos_t l);
 
@@ -135,7 +135,7 @@ class W_final_pf{
 
         pf_t get_e_intP(cand_pos_t i, cand_pos_t ip, cand_pos_t jp, cand_pos_t j);
 
-        int compute_exterior_cases(cand_pos_t l, cand_pos_t j, const sparse_tree &tree);
+        int compute_exterior_cases(cand_pos_t l, cand_pos_t j, sparse_tree &tree);
 };
 
 #endif

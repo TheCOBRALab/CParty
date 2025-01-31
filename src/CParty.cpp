@@ -14,8 +14,6 @@
 #include <string>
 #include <getopt.h>
 
-int is_invalid_restriction(char* restricted_structure, char* current_structure);
-
 bool exists (const std::string path) {
   struct stat buffer;   
   return (stat (path.c_str(), &buffer) == 0); 
@@ -172,7 +170,8 @@ int main (int argc, char *argv[])
 	std::vector<Result> result_list;
     //double min_energy;
 	// Iterate through all hotspots or the single given input structure
-	for(int i = 0;i<hotspot_list.size();++i){
+	cand_pos_t size = hotspot_list.size();
+	for(int i = 0;i<size;++i){
 		double energy;
 		std::string structure = hotspot_list[i].get_structure();
 
@@ -227,26 +226,4 @@ int main (int argc, char *argv[])
 	}
 
     return 0;
-}
-
-//---------------------------------------this function is suppose to be the same as the one in Hfold_interacting, if any changes are made, please change that one too--------------------
-//kevin 30 Aug 2017
-//check if the computed structure matches the restricted structure
-int is_invalid_restriction(char* restricted_structure, char* current_structure){
-	std::string openBracketArray ("({[");
-	std::string closeBracketArray (")}]");
-
-	for (int i=0; i < strlen(restricted_structure); i++){
-        if(restricted_structure[i] != '_' && restricted_structure[i] != current_structure[i]){
-			if( (openBracketArray.find_first_of(restricted_structure[i]) != -1) && ((openBracketArray.find_first_of(current_structure[i]) != -1)) ){
-				continue;
-			}else if ( (closeBracketArray.find_first_of(restricted_structure[i]) != -1) && ((closeBracketArray.find_first_of(current_structure[i]) != -1)) ){
-				continue;
-			}else{
-				return 1;
-			}
-		}
-
-    }
-	return 0;
 }

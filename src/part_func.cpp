@@ -139,7 +139,7 @@ void W_final_pf::rescale_pk_globals(){
  * When applied to WMBP, if all cases are 0, then we can proceed with WMBP
  * Mateo Jan 2025: Added to Fix WMBP problem
 */
-int W_final_pf::compute_exterior_cases(cand_pos_t l, cand_pos_t j, const sparse_tree &tree){
+int W_final_pf::compute_exterior_cases(cand_pos_t l, cand_pos_t j, sparse_tree &tree){
 	// Case 1 -> l is not covered
 	bool case1 = tree.tree[l].parent->index <= 0;
 	// Case 2 -> l is paired
@@ -156,12 +156,10 @@ double W_final_pf::hfold_pf(sparse_tree &tree){
 
     for (int i = n; i >=1; --i){	
 		for (int j =i; j<=n; ++j){
-			cand_pos_t ij = index[i]+j-i;
 
 			const bool evaluate = tree.weakly_closed(i,j);
 			const pair_type ptype_closing = pair[S_[i]][S_[j]];
 			const bool restricted = tree.tree[i].pair == -1 || tree.tree[j].pair == -1;
-			const bool paired = (tree.tree[i].pair == j && tree.tree[j].pair == i);
 
 			if(ptype_closing> 0 && evaluate && !restricted)
 			compute_energy_restricted (i,j,tree);
@@ -179,7 +177,6 @@ double W_final_pf::hfold_pf(sparse_tree &tree){
 		
 		for (cand_pos_t k=1; k<=j-TURN-1; ++k){
 			pf_t acc = (k>1) ? W[k-1]: 1; //keep as 0 or 1?
-            pair_type tt  = pair[S_[k]][S_[j]];
 
 			contributions += acc*get_energy(k,j)*exp_Extloop(k,j);//E_ext_Stem(V->get_energy(k,j),V->get_energy(k+1,j),V->get_energy(k,j-1),V->get_energy(k+1,j-1),S_,params_,k,j,n,tree.tree));
 			if (k == 1 || (tree.weakly_closed(1,k-1) && tree.weakly_closed(k,j))) contributions += acc*get_energy_WMB(k,j)*expPS_penalty;
@@ -306,13 +303,13 @@ void W_final_pf::compute_energy_WM_restricted (cand_pos_t i, cand_pos_t j, spars
     WM[ij] = contributions;
 }
 
-pf_t W_final_pf::compute_energy_VM_restricted (cand_pos_t i, cand_pos_t j, std::vector<Node> &tree){
+pf_t W_final_pf::compute_energy_VM_restricted (cand_pos_t i, cand_pos_t j, std::vector<int> &up){
     pf_t contributions = 0;
     for (cand_pos_t k = i+1; k <= j-3; ++k)
     {
         contributions += (get_energy_WM(i+1,k-1)*get_energy_WMv(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
         contributions += (get_energy_WM(i+1,k-1)*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
-        contributions += (expMLbase[k-i-1]*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
+        if(up[k-1] >= (k-(i+1))) contributions += (expMLbase[k-i-1]*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
     }
 
 	contributions *=scale[2];
@@ -323,7 +320,6 @@ void W_final_pf::compute_energy_restricted(cand_pos_t i,cand_pos_t j,sparse_tree
 
     cand_pos_t ij = index[i]+j-i;
 
-    const pair_type ptype_closing = pair[S_[i]][S_[j]];
     const bool unpaired = (tree.tree[i].pair<-1 && tree.tree[j].pair<-1);
 	const bool paired = (tree.tree[i].pair == j && tree.tree[j].pair == i);
 
@@ -336,7 +332,7 @@ void W_final_pf::compute_energy_restricted(cand_pos_t i,cand_pos_t j,sparse_tree
 
         contributions += compute_internal_restricted(i,j,tree.up);
 
-        contributions += compute_energy_VM_restricted(i,j,tree.tree);
+        contributions += compute_energy_VM_restricted(i,j,tree.up);
     }   
 
     V[ij] = contributions;
@@ -376,8 +372,6 @@ void W_final_pf::compute_pk_energies(cand_pos_t i,cand_pos_t j,sparse_tree &tree
 	cand_pos_t ip = tree.tree[i].pair; // i's pair ip should be right side so ip = )
 	cand_pos_t jp = tree.tree[j].pair; // j's pair jp should be left side so jp = (
 	compute_BE(i,ip,jp,j,tree);
-    cand_pos_t ijp = index[i]+jp-i;
-
 }
 
 void W_final_pf::compute_WI(cand_pos_t i,cand_pos_t j,sparse_tree &tree){
@@ -450,7 +444,6 @@ void W_final_pf::compute_VPR(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
 void W_final_pf::compute_VP(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
 	cand_pos_t ij = index[i]+j-i;
 
-	const pair_type ptype_closing = pair[S_[i]][S_[j]];	
     pf_t contributions = 0;
 	
 	// Borders -- added one to i and j to make it fit current bounds but also subtracted 1 from answer as the tree bounds are shifted as well
@@ -620,11 +613,9 @@ void W_final_pf::compute_WMBP(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
     contributions += m3; // Make sure not to use non-Partition values
 
     if(tree.tree[j].pair < 0 && tree.tree[i].pair >= 0){
-		energy_t tmp = INF;
 		cand_pos_t b_ij = tree.b(i,j);
 		for (cand_pos_t l = i+1; l < j; l++){
 			cand_pos_t bp_il = tree.bp(i,l);
-			cand_pos_t Bp_lj = tree.Bp(l,j);
 			if(b_ij>0 && l<b_ij){
 				if(bp_il >= 0 && bp_il < n && l+TURN <= j){
 					if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
@@ -647,8 +638,6 @@ void W_final_pf::compute_WMB(cand_pos_t  i, cand_pos_t  j, sparse_tree &tree){
 		WMB[ij] = 0;
 		return;
 	}
-
-	energy_t m2 = INF, mWMBP = INF;
 
 	if (tree.tree[j].pair >= 0 && j > tree.tree[j].pair){
 		cand_pos_t bp_j = tree.tree[j].pair;
@@ -700,8 +689,6 @@ void W_final_pf::compute_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_
 		if (tree.tree[l].pair >= -1 && jp <= tree.tree[l].pair && tree.tree[l].pair < j){
 
 			cand_pos_t lp = tree.tree[l].pair;
-			cand_pos_t il = index[i]+l-i;
-			cand_pos_t lpj = index[lp]+j-lp;
 
 			bool empty_region_il = (tree.up[(l)-1] >= l-i-1); //empty between i+1 and l-1
 			bool empty_region_lpj = (tree.up[(j)-1] >= j-lp-1); // empty between lp+1 and j-1

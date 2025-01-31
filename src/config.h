@@ -53,7 +53,7 @@
 /* #undef HAVE__BOOL */
 
 /* Define to 1 for turning off debugging */
-#define NDEBUG /**/
+// #define NDEBUG /**/
 
 /* Name of package */
 #define PACKAGE "sparsemfefold"
