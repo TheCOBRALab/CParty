@@ -345,8 +345,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->subopt_given),
-              &(local_args_info.subopt_given), optarg, 0, 0, ARG_NO,0, 0,"subopt", 'n',additional_error))
-            goto failure;
+              &(local_args_info.subopt_given), optarg, 0, 0, ARG_NO,0, 0,"subopt", 'n',additional_error)){
+            goto failure;}
 
             subopt = strtol(optarg,NULL,10);
         
@@ -358,19 +358,19 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->paramFile_given),
-              &(local_args_info.paramFile_given), optarg, 0, 0, ARG_NO,0, 0,"paramFile", 'P',additional_error))
-            goto failure;
+              &(local_args_info.paramFile_given), optarg, 0, 0, ARG_NO,0, 0,"paramFile", 'P',additional_error)){
+            goto failure;}
 
             parameter_file = optarg;
           break;
 
-        case 'S':	/* Take in a different Parameter File.  */
+        case 'S':	/* Take in a shape File.  */
         
         
           if (update_arg( 0 , 
                0 , &(args_info->shape_given),
-              &(local_args_info.shape_given), optarg, 0, 0, ARG_NO,0, 0,"shape", 'S',additional_error))
-            goto failure;
+              &(local_args_info.shape_given), optarg, 0, 0, ARG_NO,0, 0,"shape", 'S',additional_error)){
+            goto failure;}
 
             shape_file = optarg;
           break;
@@ -380,8 +380,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->input_structure_given),
-              &(local_args_info.input_structure_given), optarg, 0, 0, ARG_NO,0, 0,"input-structure", 'r',additional_error))
-            goto failure;
+              &(local_args_info.input_structure_given), optarg, 0, 0, ARG_NO,0, 0,"input-structure", 'r',additional_error)){
+            goto failure;}
 
             input_struct = optarg;
         
@@ -391,8 +391,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->input_file_given),
-              &(local_args_info.input_file_given), optarg, 0, 0, ARG_NO,0, 0,"input-file", 'i',additional_error))
-            goto failure;
+              &(local_args_info.input_file_given), optarg, 0, 0, ARG_NO,0, 0,"input-file", 'i',additional_error)){
+            goto failure;}
 
             input_file = optarg;
         
@@ -402,8 +402,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->output_file_given),
-              &(local_args_info.output_file_given), optarg, 0, 0, ARG_NO,0, 0,"output-file", 'o',additional_error))
-            goto failure;
+              &(local_args_info.output_file_given), optarg, 0, 0, ARG_NO,0, 0,"output-file", 'o',additional_error)){
+            goto failure;}
 
             output_file = optarg;
         
@@ -414,8 +414,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->pk_free_given),
-              &(local_args_info.pk_free_given), optarg, 0, 0, ARG_NO,0, 0,"pk-free", 'p',additional_error))
-            goto failure;
+              &(local_args_info.pk_free_given), optarg, 0, 0, ARG_NO,0, 0,"pk-free", 'p',additional_error)){
+            goto failure;}
         
           break;
 
@@ -424,8 +424,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->pk_only_given),
-              &(local_args_info.pk_only_given), optarg, 0, 0, ARG_NO,0, 0,"pk-only", 'k',additional_error))
-            goto failure;
+              &(local_args_info.pk_only_given), optarg, 0, 0, ARG_NO,0, 0,"pk-only", 'k',additional_error)){
+            goto failure;}
         
           break;
 
@@ -434,8 +434,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         
           if (update_arg( 0 , 
                0 , &(args_info->dangles_given),
-              &(local_args_info.dangles_given), optarg, 0, 0, ARG_NO,0, 0,"dangles", 'd',additional_error))
-            goto failure;
+              &(local_args_info.dangles_given), optarg, 0, 0, ARG_NO,0, 0,"dangles", 'd',additional_error)){
+            goto failure;}
 
             dangle_model = std::stoi(optarg);
         
@@ -449,8 +449,8 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
           
             if (update_arg( 0 , 
                  0 , &(args_info->noConv_given),
-                &(local_args_info.noConv_given), optarg, 0, 0, ARG_NO, 0, 0,"noConv", '-', additional_error))
-              goto failure;
+                &(local_args_info.noConv_given), optarg, 0, 0, ARG_NO, 0, 0,"noConv", '-', additional_error)){
+              goto failure;}
           
           }
 
