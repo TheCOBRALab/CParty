@@ -94,7 +94,7 @@ Read input file from cmdline; predict minimum free energy, ensemble energy, and 
         if -o is provided with just a file name without a path, and if -i is provided, then the output file will be generated in the directory where the input file is located
         if suboptimal structures are specified, repeated structures are skipped. That is, if different input structures come to the same conclusion, only those that are different are shown
         If no input structure is given, or suboptimal structures are greater than the number given, CParty generates hotspots to be used as input structures -- where hotspots are energetically favorable stems
-        The default parameter file is Turner2004. This can be changed via -P and specifying the parameter file you would like
+        The default parameter file is DP09. This can be changed via -P and specifying the parameter file you would like
     
     Sequence requirements:
         containing only characters GCAU
@@ -127,7 +127,7 @@ Read input file from cmdline; predict minimum free energy, ensemble energy, and 
     ./build/CParty -p -r "(............................)" -o "/home/username/Desktop/some_folder/outputfile.txt" GCAACGAUGACAUACAUCGCUAGUCGACGC
     ./build/CParty -n 3 -r "(............................)" -o "/home/username/Desktop/some_folder/outputfile.txt" GCAACGAUGACAUACAUCGCUAGUCGACGC
     ./build/CParty -k -r "(............................)" GCAACGAUGACAUACAUCGCUAGUCGACGC
-    ./build/CParty -P "src/params/parameters_DP09.txt" -r "(............................)" GCAACGAUGACAUACAUCGCUAGUCGACGC
+    ./build/CParty -P "params/rna_Turner04.par" -r "(............................)" GCAACGAUGACAUACAUCGCUAGUCGACGC
 
 
 
