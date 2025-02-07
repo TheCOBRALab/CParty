@@ -140,9 +140,8 @@ int main (int argc, char *argv[])
 	if(restricted != "") validateStructure(seq,restricted);
 	if(pk_free) if(restricted == "") restricted = std::string('.',n);
 
-	std::string file= "";
-	args_info.paramFile_given ? file = parameter_file : file = "";
-	if(file!=""){
+	std::string file= args_info.paramFile_given ? parameter_file : "params/rna_Turner2004.par";
+	if(exists(file)){
 		vrna_params_load(file.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
 	}
 	else if (seq.find('T') != std::string::npos){
