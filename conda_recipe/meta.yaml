@@ -1,0 +1,43 @@
+package:
+  name: cparty
+  version: "1.0.0"
+
+source:
+  path: ..
+  # git_url: https://github.com/HosnaJabbari/CParty.git
+  # git_rev: (latest tag)
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - make
+    - cmake >=3.1
+  host:
+    - libstdcxx-ng    # [linux]
+    - libcxx          # [osx]
+  run:
+    - libstdcxx-ng    # [linux]
+    - libcxx          # [osx]
+
+about:
+  home: https://github.com/HosnaJabbari/CParty
+  license: "MIT"
+  license_file: LICENSE
+  summary: "CParty is an algorithm for computing the conditional partition function for density-2 RNA pseudoknots."
+  description: |
+    Software implementation of CParty.
+    CParty is an algorithm for computing the conditional partition function for density-2 RNA pseudoknots.
+  dev_url: https://github.com/HosnaJabbari/CParty
+
+
+extra:
+  recipe-maintainers:
+    - PointlessUser
+
+test:
+  commands:
+    - CParty --help

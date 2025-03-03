@@ -97,6 +97,9 @@ target_include_directories(RNA PRIVATE .)
 
 add_executable(CParty ${SOURCE})
 
+# Install CParty into the bin directory
+install(TARGETS CParty RUNTIME DESTINATION bin)
+
 target_link_libraries(CParty PRIVATE RNA)
 
 include_directories(src)
