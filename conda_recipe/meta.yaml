@@ -29,8 +29,18 @@ about:
   license_file: LICENSE
   summary: "CParty is an algorithm for computing the conditional partition function for density-2 RNA pseudoknots."
   description: |
-    Software implementation of CParty.
-    CParty is an algorithm for computing the conditional partition function for density-2 RNA pseudoknots.
+    CParty is a computational tool designed for RNA secondary structure prediction, 
+    specifically computing the conditional partition function for density-2 RNA pseudoknots. 
+    It enables users to analyze RNA sequences, predict minimum free energy structures, 
+    calculate ensemble energy, and generate optimal RNA folding structures, 
+    including pseudoknot-free and pseudoknotted configurations. 
+
+    The software is implemented in C++ and requires a C++11-compatible compiler with CMake. 
+    It is compatible with Linux and macOS systems and provides a command-line interface 
+    with various options for input and output customization.
+
+    For installation, usage instructions, and additional details, visit:
+    https://github.com/HosnaJabbari/CParty
   dev_url: https://github.com/HosnaJabbari/CParty
 
 
