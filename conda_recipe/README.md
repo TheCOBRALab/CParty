@@ -6,8 +6,8 @@
 ## How to build the package
 - Start in the HFold folder
 - Run `conda build ./conda_recipe` to build package
-- Run `conda install --use-local hfold` to install (case sensitive)
-- Run `HFold --help` to insure it installed properly (case sensitive)
+- Run `conda install --use-local cparty` to install (case sensitive)
+- Run `CParty --help` to insure it installed properly (case sensitive)
 
 ## Setup Conda Account (For uploading packages)
 - Create an account at https://anaconda.org/
