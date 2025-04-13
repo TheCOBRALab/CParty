@@ -170,7 +170,7 @@ int main (int argc, char *argv[])
     //double min_energy;
 	// Iterate through all hotspots or the single given input structure
 	cand_pos_t size = hotspot_list.size();
-	for(int i = 0;i<size;++i){
+	for(cand_pos_t i = 0;i<size;++i){
 		double energy;
 		std::string structure = hotspot_list[i].get_structure();
 
@@ -178,6 +178,12 @@ int main (int argc, char *argv[])
 		std::string final_structure = hfold(seq,structure, energy,tree,pk_free,pk_only, dangles);
 
 		double pf_energy = hfold_pf(seq,tree,pk_free,dangles,energy);
+
+		if(!args_info.input_structure_given && energy>0.0){
+			energy = 0.0;
+			pf_energy = 0.0;
+			final_structure = std::string(n,'.');
+		}
 		
 		Result result(seq,hotspot_list[i].get_structure(),hotspot_list[i].get_energy(),final_structure,energy,pf_energy);
 		result_list.push_back(result);

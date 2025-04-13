@@ -430,7 +430,7 @@ void s_energy_matrix::compute_hotspot_energy (cand_pos_t i, cand_pos_t j, bool i
         energy = compute_stack(i,j,params_);
         // printf("stack: %d\n",energy);
     }else{
-        energy = HairpinE(seq_,S_,S1_,params_,i,j);
+        energy = 0;//HairpinE(seq_,S_,S1_,params_,i,j);
         // printf("hairpin: %d\n",energy);
     }
         
