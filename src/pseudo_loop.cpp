@@ -362,7 +362,7 @@ void pseudo_loop::compute_WMBP(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
 			// the chosen l should be less than border_b(i,j) -- should be greater than border_b(i,l)
 			// Mateo Jan 2025 Added exterior cases to consider when looking at band borders. Solved case of [.(.].[.).]
 			int ext_case = compute_exterior_cases(l,j,tree);
-			if((b_ij > 0 && l < b_ij) || ext_case == 0){
+			if((b_ij > 0 && l < b_ij) || (b_ij<0  && ext_case == 0)){
 				cand_pos_t bp_il = tree.bp(i,l);
 				cand_pos_t Bp_lj = tree.Bp(l,j);
 				if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){ // bp(i,l) < l < Bp(l,j)
@@ -393,8 +393,10 @@ void pseudo_loop::compute_WMBP(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
 			// Hosna: April 19th, 2007
 			// the chosen l should be less than border_b(i,j) -- should be greater than border_b(i,l)
 			// Mateo Jan 2025 Added exterior cases to consider when looking at band borders. Solved case of [.(.].[.).]
+			// Mateo May 2025 I'm adding to this -- exterior cases are for [.(.]..[.).] where b_ij = -2 when it should be inf and allow
+			// the for loop to happen. If b_ij>0 though, the exterior cases shouldn't play a role.
 			int ext_case = compute_exterior_cases(l,j,tree);
-			if((b_ij > 0 && l < b_ij) || ext_case == 0){
+			if((b_ij > 0 && l < b_ij) || (b_ij<0  && ext_case == 0)){
 				if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){ // bp(i,l) < l < Bp(l,j)
 					cand_pos_t B_lj = tree.B(l,j);
 

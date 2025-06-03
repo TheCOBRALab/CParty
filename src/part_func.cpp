@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#define debug 0
 /*
  * If the global use_mfelike_energies flag is set, truncate doubles to int
  * values and cast back to double. This makes the energy parameters of the
@@ -31,11 +32,12 @@
     )
 
 
-W_final_pf::W_final_pf(std::string seq, bool pk_free, int dangle, double energy) : exp_params_(scale_pf_parameters())
+W_final_pf::W_final_pf(std::string seq, bool pk_free, int dangle, double energy, int num_samples) : exp_params_(scale_pf_parameters())
 {
     this->seq = seq;
     this->n = seq.length();
     this->pk_free = pk_free;
+	this->num_samples = num_samples;
 
     make_pair_matrix();
     exp_params_->model_details.dangles = dangle;
@@ -53,6 +55,7 @@ W_final_pf::W_final_pf(std::string seq, bool pk_free, int dangle, double energy)
         index[i] = index[i-1]+(n+1)-i+1;
     // Allocate space
     V.resize(total_length,0);
+	VM.resize(total_length,0);
     WM.resize(total_length,0);
     WMv.resize(total_length,0);
     WMp.resize(total_length,0);
@@ -152,10 +155,14 @@ int W_final_pf::compute_exterior_cases(cand_pos_t l, cand_pos_t j, sparse_tree &
 	return (case1 <<2) | (case2 << 1) | case4;
 }
 
+inline double W_final_pf::to_Energy(pf_t energy, cand_pos_t length){
+	return ((-log(energy) - length * log(exp_params_->pf_scale)) * exp_params_->kT / 1000.0);
+}
+
 double W_final_pf::hfold_pf(sparse_tree &tree){
 
-    for (int i = n; i >=1; --i){	
-		for (int j =i; j<=n; ++j){
+    for (cand_pos_t i = n; i >=1; --i){	
+		for (cand_pos_t j =i; j<=n; ++j){
 
 			const bool evaluate = tree.weakly_closed(i,j);
 			const pair_type ptype_closing = pair[S_[i]][S_[j]];
@@ -172,24 +179,33 @@ double W_final_pf::hfold_pf(sparse_tree &tree){
 		}
 
 	}
+
     for (cand_pos_t j= TURN+1; j <= n; j++){
         pf_t contributions = 0;
-		
-		for (cand_pos_t k=1; k<=j-TURN-1; ++k){
-			pf_t acc = (k>1) ? W[k-1]: 1; //keep as 0 or 1?
+		if(tree.tree[j].pair < 0) contributions += W[j-1]*scale[1];
+		if(tree.weakly_closed(1,j)){
+			for (cand_pos_t k=1; k<=j-TURN-1; ++k){
+				if(tree.weakly_closed(1,k-1)){
+					pf_t acc = (k>1) ? W[k-1]: 1; //keep as 0 or 1?
 
-			contributions += acc*get_energy(k,j)*exp_Extloop(k,j);//E_ext_Stem(V->get_energy(k,j),V->get_energy(k+1,j),V->get_energy(k,j-1),V->get_energy(k+1,j-1),S_,params_,k,j,n,tree.tree));
-			if (k == 1 || (tree.weakly_closed(1,k-1) && tree.weakly_closed(k,j))) contributions += acc*get_energy_WMB(k,j)*expPS_penalty;
-
+					contributions += acc*get_energy(k,j)*exp_Extloop(k,j);
+					if (k == 1 || tree.weakly_closed(k,j)) contributions += acc*get_energy_WMB(k,j)*expPS_penalty;
+				}
+			}
 		}
-        if(tree.tree[j].pair < 0) contributions += W[j-1]*scale[1];
-
-        if(!tree.weakly_closed(1,j)) contributions = 0;
 
 		W[j] = contributions;	
 	}
 
-    double energy = ((-log(W[n]) - n * log(exp_params_->pf_scale)) * exp_params_->kT / 1000.0);
+    pf_t energy = to_Energy(W[n],n);
+	//Base pair probability
+	structure = std::string (n,'.');
+	std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > samples;
+	for(cand_pos_t i = 0; i<num_samples;++i){
+		Sample_W(1,n,samples,tree);
+	}
+
+	pairing_tendency(samples,tree);
 
     return energy;
 }
@@ -243,15 +259,15 @@ pf_t W_final_pf::HairpinE(cand_pos_t i, cand_pos_t j){
 pf_t W_final_pf::compute_internal_restricted(cand_pos_t i, cand_pos_t j, std::vector<int> &up){
     pf_t v_iloop = 0;
     cand_pos_t max_k = std::min(j-TURN-2,i+MAXLOOP+1);
-	const int ptype_closing = pair[S_[i]][S_[j]];
+	const pair_type ptype_closing = pair[S_[i]][S_[j]];
 	for ( cand_pos_t k=i+1; k<=max_k; ++k) {
 		cand_pos_t min_l=std::max(k+TURN+1 + MAXLOOP+2, k+j-i) - MAXLOOP-2;
         if((up[k-1]>=(k-i-1))){
             for (cand_pos_t l=j-1; l>=min_l; --l) {
                 if(up[j-1]>=(j-l-1)){
 					pf_t v_iloop_kl = exp_E_IntLoop(k-i-1,j-l-1,ptype_closing,rtype[pair[S_[k]][S_[l]]],S1_[i+1],S1_[j-1],S1_[k-1],S1_[l+1],exp_params_)*get_energy(k,l);
-					int u1 = k-i-1;
-					int u2 = j-l-1;
+					cand_pos_t u1 = k-i-1;
+					cand_pos_t u2 = j-l-1;
 					v_iloop_kl *= scale[u1 + u2 + 2];
                     v_iloop += v_iloop_kl;
                 }
@@ -289,8 +305,7 @@ void W_final_pf::compute_energy_WM_restricted (cand_pos_t i, cand_pos_t j, spars
 	cand_pos_t ij = index[(i)]+(j)-(i);
 	cand_pos_t ijminus1 = index[(i)]+(j)-1-(i);
 
-	for (cand_pos_t k=i; k <= j -TURN-1; k++)
-	{
+	for (cand_pos_t k=i; k <= j -TURN-1; ++k){
 		bool can_pair = tree.up[k-1] >= (k-i);
 		if(can_pair) contributions += (static_cast<pf_t>(expMLbase[k-i])*get_energy(k,j)*exp_MLstem(k,j));
 		if(can_pair) contributions += (static_cast<pf_t>(expMLbase[k-i])*get_energy_WMB(k,j)*expPSM_penalty*expb_penalty);
@@ -305,14 +320,15 @@ void W_final_pf::compute_energy_WM_restricted (cand_pos_t i, cand_pos_t j, spars
 
 pf_t W_final_pf::compute_energy_VM_restricted (cand_pos_t i, cand_pos_t j, std::vector<int> &up){
     pf_t contributions = 0;
-    for (cand_pos_t k = i+1; k <= j-3; ++k)
-    {
+	cand_pos_t ij = index[(i)]+(j)-(i);
+    for (cand_pos_t k = i+1; k <= j-3; ++k){
         contributions += (get_energy_WM(i+1,k-1)*get_energy_WMv(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
         contributions += (get_energy_WM(i+1,k-1)*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
         if(up[k-1] >= (k-(i+1))) contributions += (expMLbase[k-i-1]*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
     }
 
 	contributions *=scale[2];
+	VM[ij] = contributions;
     return contributions;
 }
 
@@ -334,7 +350,6 @@ void W_final_pf::compute_energy_restricted(cand_pos_t i,cand_pos_t j,sparse_tree
 
         contributions += compute_energy_VM_restricted(i,j,tree.up);
     }   
-
     V[ij] = contributions;
 }
 
@@ -382,10 +397,10 @@ void W_final_pf::compute_WI(cand_pos_t i,cand_pos_t j,sparse_tree &tree){
         WI[ij] = expPUP_pen[1];
         return;
     }
-    contributions += (get_energy(i,j)*expPPS_penalty);
-    contributions += (get_energy_WMB(i,j)*expPSP_penalty*expPPS_penalty);
-
-    for (cand_pos_t k = i+1; k < j-TURN-1; ++k){
+    // contributions += (get_energy(i,j)*expPPS_penalty);
+    // contributions += (get_energy_WMB(i,j)*expPSP_penalty*expPPS_penalty);
+	// If k-1<i, WI(i,k-1) = 1; if k-1==i, WI(i,k-1) = PUP_pen
+    for (cand_pos_t k = i; k < j-TURN-1; ++k){
         contributions += (get_energy_WI(i,k-1)*get_energy(k,j)*expPPS_penalty);
         contributions += (get_energy_WI(i,k-1)*get_energy_WMB(k,j)*expPSP_penalty*expPPS_penalty);
     }
@@ -404,7 +419,7 @@ void W_final_pf::compute_WIP(cand_pos_t i,cand_pos_t j,sparse_tree &tree){
 		bool can_pair = tree.up[k-1] >= (k-i);
 
         contributions += (get_energy_WIP(i,k-1)*get_energy(k,j)*expbp_penalty);
-        contributions += (get_energy_WIP(i,k-1)*get_energy_WMB(k,j)*expb_penalty*expPSM_penalty);
+        contributions += (get_energy_WIP(i,k-1)*get_energy_WMB(k,j)*expbp_penalty*expPSM_penalty);
         if(can_pair) contributions += (expcp_pen[k-i]*get_energy(k,j)*expbp_penalty);
         if(can_pair) contributions += (expcp_pen[k-i]*get_energy_WMB(k,j)*expbp_penalty*expPSM_penalty);
     }
@@ -573,10 +588,10 @@ void W_final_pf::compute_WMBP(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
 
     if (tree.tree[j].pair < 0){
 		cand_pos_t b_ij = tree.b(i,j);
-        for (cand_pos_t l = i+1; l<j ; l++)	{
+        for (cand_pos_t l = i+1; l<j ; ++l)	{
 			// Mateo Jan 2025 Added exterior cases to consider when looking at band borders. Solved case of [.(.].[.).]
 			int ext_case = compute_exterior_cases(l,j,tree);
-			if((b_ij > 0 && l < b_ij) || ext_case == 0){
+			if((b_ij > 0 && l < b_ij) || (b_ij<0  && ext_case == 0)){
 				cand_pos_t bp_il = tree.bp(i,l);
 				cand_pos_t Bp_lj = tree.Bp(l,j);
 				if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){ 
@@ -597,7 +612,7 @@ void W_final_pf::compute_WMBP(cand_pos_t i, cand_pos_t j, sparse_tree &tree){
             cand_pos_t Bp_lj = tree.Bp(l,j);
 			// Mateo Jan 2025 Added exterior cases to consider when looking at band borders. Solved case of [.(.].[.).]
 			int ext_case = compute_exterior_cases(l,j,tree);
-			if((b_ij > 0 && l < b_ij) || ext_case == 0){
+			if((b_ij > 0 && l < b_ij) || (b_ij<0  && ext_case == 0)){
 				if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){ 
 					cand_pos_t B_lj = tree.B(l,j);
 					if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
@@ -639,7 +654,7 @@ void W_final_pf::compute_WMB(cand_pos_t  i, cand_pos_t  j, sparse_tree &tree){
 
 	if (tree.tree[j].pair >= 0 && j > tree.tree[j].pair){
 		cand_pos_t bp_j = tree.tree[j].pair;
-		for (cand_pos_t l = (bp_j +1); (l < j); l++){
+		for (cand_pos_t l = (bp_j +1); (l < j); ++l){
 			if(tree.tree[l].pair>0) continue;
 			cand_pos_t Bp_lj = tree.Bp(l,j);
 			if (Bp_lj >= 0 && Bp_lj<n){
@@ -694,8 +709,8 @@ void W_final_pf::compute_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_
 
 			if (empty_region_il && empty_region_lpj){//&& !(ip == (i+1) && jp==(j-1)) && !(l == (i+1) && lp == (j-1))){
 				pf_t eintp = get_e_intP(i,l,lp,j)*get_BE(l,lp,ip,jp,tree);
-				int u1 = l-i-1;
-				int u2 = j-lp-1;
+				cand_pos_t u1 = l-i-1;
+				cand_pos_t u2 = j-lp-1;
 				eintp *= scale[u1+u2+2];
                 contributions += eintp; // Added to e_intP that l != i+1 and lp != j-1 at the same time
 			}
@@ -721,4 +736,1034 @@ void W_final_pf::compute_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_
 	BE[iip] = contributions;
 }
 
+/*                                BPP                                            */
 
+inline cand_pos_t boustrophedon_at(cand_pos_t start,cand_pos_t end,cand_pos_t pos){
+	cand_pos_t  count   = pos - 1;
+	cand_pos_t  advance = (cand_pos_t)(count / 2);
+
+	return start + (end - start) * (count % 2) + advance - (2 * (count % 2)) * advance;
+}
+
+std::vector<cand_pos_t> boustrophedon(cand_pos_t start,cand_pos_t end){
+  std::vector<cand_pos_t> seq;
+
+  if (end >= start) {
+    seq.push_back(end - start + 1);
+    for (cand_pos_t pos = 1; pos <= end - start + 1; pos++)
+      seq.push_back(boustrophedon_at(start, end, pos));
+  }
+
+  return seq;
+}
+
+void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("W at %d and %d\n",start,end);
+	cand_pos_t j = end;
+	cand_pos_t m = end;
+	pf_t fbd   = 0; /* stores weight of forbidden terms for given q[ij]*/
+	pf_t fbds  = 0; /* stores weight of forbidden term for given motif */
+	pf_t W_temp = 0;
+	if(end>start){
+		for(;j>start;--j){ // Moving through the unpaired bases in j
+			if(tree.tree[j].pair < 0){ // Checking if j can be unpaired
+				pf_t r = vrna_urn() * (W[j] - fbd);
+				W_temp = W[j-1] * scale[1];
+				if (r > (W_temp - fbds)) { // Checking if our random sample means j is paired or unpaired
+					break; // j is paired
+				}
+			}
+			else{
+				break; // j can't be unpaired so it must be paired
+			}
+		}
+		if (j <= start + TURN) return; // No more base pairs can occur, but still successful
+
+
+		pf_t r = vrna_urn() * (W[j] - W_temp - fbd);
+		std::vector<cand_pos_t> is = boustrophedon(start, j - 1); // applies an alternating list so that the base pairing isn't biased to the right side
+		cand_pos_t bous_n = is.size();
+		pf_t qt = 0;
+		cand_pos_t k = start;
+		bool pseudoknot = false;
+		if(tree.weakly_closed(1,j)){
+			for (m = 1; m < bous_n; ++m) {
+					k = is[m];
+					if(tree.weakly_closed(1,k-1)){
+						pf_t acc = (k>1) ? W[k-1]: 1;
+						pf_t Wkl = acc*get_energy(k,j)*exp_Extloop(k,j);
+						qt+= Wkl;
+						if(qt>r){
+							break; // k pairs with j
+						}
+
+						if(k == 1 || tree.weakly_closed(k,j)){
+							Wkl = acc*get_energy_WMB(k,j)*expPS_penalty;
+							qt+= Wkl;
+							if(qt>r){
+								pseudoknot = true;
+								break; // k pairs with j as a pseudoknot
+							}
+						}
+					}
+				
+			}
+		}
+		if (m + start > j) {
+			  printf("backtracking failed in ext loop at %d and %d with W[j] = %f, qt:%f < r:%f\n",start,end,W[j],qt,r);
+			  /* error */
+			  exit(0);
+			
+		}
+		Sample_W(start,k-1, samples,tree);
+		if(!pseudoknot){
+			Sample_V(k,j,samples,tree);
+		} else {
+			Sample_WMB(k,j,samples,tree);
+		}
+		
+	}
+}
+
+void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("V at %d and %d\n",i,j);
+
+	cand_pos_t k = i;
+	cand_pos_t l = j;
+	pf_t fbd   = 0; /* stores weight of forbidden terms for given q[ij]*/
+
+	pf_t qbr = get_energy(i,j);
+	pf_t V_temp = 0;
+
+	std::pair <cand_pos_tu,cand_pos_tu> base_pair (i,j);
+	++samples[base_pair]; // Increments the base pair found in V
+
+	pf_t r     = vrna_urn() * (qbr - fbd);
+	pf_t qbt1  = 0;
+	bool canH = !(tree.up[j-1]<(j-i-1));
+
+	if(canH) V_temp = HairpinE(i,j);
+
+	qbt1 += V_temp;
+	if (qbt1 >= r) return;
+	cand_pos_t max_k = std::min({i+MAXLOOP+1,j-TURN-2,}); // i+1+tree.up[i+1]?
+	const pair_type ptype_closing = pair[S_[i]][S_[j]];
+	for (k = i + 1; k <= max_k; k++) {
+		if(tree.up[k-1]>=(k-i-1)){
+			cand_pos_t min_l=std::max(k+TURN+1 + MAXLOOP+2, k+j-i) - MAXLOOP-2;
+			for (l =j-1; l>=min_l; --l){
+				if(tree.up[j-1]>=(j-l-1)){
+					cand_pos_t u1 = k-i-1;
+					cand_pos_t u2 = j-l-1;
+					V_temp = get_energy(k,l)*exp_E_IntLoop(u1,u2,ptype_closing,rtype[pair[S_[k]][S_[l]]],S1_[i+1],S1_[j-1],S1_[k-1],S1_[l+1],exp_params_)*scale[u1 + u2 + 2];
+					qbt1 += V_temp;
+					if (qbt1 >= r) break;
+				}
+			}
+			if (qbt1 >= r) break;
+		}
+	}
+	if(k<=max_k){
+		Sample_V(k,l,samples,tree); // Backtrack the internal loop
+		return;
+	}
+
+	V_temp = get_energy_VM(i,j); // VM includes everything since it includes the basepair (i.e. not like WM2 region), so is this fine?
+	qbt1 += V_temp;
+	if (qbt1 < r) {
+		printf("Backtracking failed for pair (%d,%d)\n", i, j);
+		exit(0);
+	}
+
+	// Must be a multiloop
+	Sample_VM(i,j,samples,tree);
+}
+
+void W_final_pf::Sample_VM(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("VM at %d and %d\n",i,j);
+	cand_pos_t k,m;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+	if ((i+1) + 2 * TURN + 2 >= (j-1)) {
+		printf("backtracking impossible for VM[%d, %d]\n", i, j);
+		exit(0); /* error */
+	}
+	pf_t V_temp = 0.;
+	pf_t VM_inside = get_energy_VM(i,j)/scale[2]; // If I remove scale from VM's saved values, I may save time here.
+	pf_t r = vrna_urn() * (VM_inside - fbd);
+	bool unpaired = false;
+	bool pseudoknot = false;
+	std::vector<cand_pos_t> is = boustrophedon(i+1,j-TURN-1); // applies an alternating list so that the base pairing isn't biased to the right side
+	cand_pos_t bous_n = is.size();
+	for (m = 1; m<bous_n; ++m){ //Why don't we do boustrophedon here?
+	// for(k=i+1; k < j-TURN; ++k){
+		k = is[m];
+		V_temp = get_energy_WM(i+1,k-1)*get_energy_WMv(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing;
+		qt += V_temp;
+		if (qt > r) {
+			break;
+		}
+
+		V_temp = (get_energy_WM(i+1,k-1)*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
+		qt+=V_temp;
+		if (qt > r) {
+			pseudoknot = true;
+			break;
+		}
+
+		if(tree.up[k-1] >= (k-(i+1))){
+			V_temp = (expMLbase[k-i-1]*get_energy_WMp(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing);
+			qt+=V_temp;
+			if (qt > r) {
+				unpaired = true;
+				pseudoknot = true;
+				break;
+			}
+		}
+	}
+	// if (m + i > j-TURN) {
+	// 	printf("backtracking failed for VM at i=%d and j =%d\n",i,j);
+	// 	exit(0);
+	// }
+	
+	if(!unpaired){
+		Sample_WM(i+1,k-1,samples,tree);
+	}
+	if(!pseudoknot){ // Case 1
+		Sample_WMV(k,j-1,samples,tree);
+	} else{ // Case 2 or 3
+		Sample_WMP(k,j-1,samples,tree);
+	}
+}
+void W_final_pf::Sample_WM(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WM at %d and %d\n",i,j);
+	cand_pos_t k,m;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+	pf_t qbt1 = 0;
+	pf_t qbt2 = 0;
+	bool unpaired = false;
+	bool pseudoknot = false;
+
+	pf_t V_temp = 0.;
+
+	if (i+TURN >= j) {
+		// return;
+		printf("backtracking impossible for WM[%u, %u]\n", i, j);
+		exit(0); /* error */
+	}
+
+	for(;j>i+TURN;--j){
+		pf_t r = vrna_urn()*(get_energy_WM(i,j) - fbd);
+
+		V_temp = get_energy_WM(i,j-1)*expMLbase[1];
+		qt = V_temp;
+		if (r > qt) {
+			break;
+		}
+	}
+
+	if (i+TURN == j) {
+		printf("backtracking failed for WM\n");
+		exit(0); /* error */
+	}
+
+	qt      = 0.;
+  	pf_t qm_rem  = get_energy_WM(i,j) - V_temp;
+
+	pf_t r = vrna_urn() * (qm_rem - fbd);
+	std::vector<cand_pos_t> is = boustrophedon(i,j-TURN-1); // applies an alternating list so that the base pairing isn't biased to the right side
+	cand_pos_t bous_n = is.size();
+	for (m=1; m < bous_n; ++m){
+	// for(k=i; k < j-TURN; ++k){
+		k = is[m];
+		qbt1 = get_energy(k,j)*exp_MLstem(k,j);
+		qbt2 = get_energy_WMB(k,j)*expPSM_penalty*expb_penalty;
+		bool can_pair = tree.up[k-1] >= (k-i);
+		if(can_pair){
+			V_temp = qbt1*expMLbase[k-i];
+			qt+=V_temp;
+			if (qt >= r) {
+				unpaired = true;
+				break;
+			}
+
+			V_temp =  qbt2*expMLbase[k-i];
+			qt+=V_temp;
+			if (qt >= r) {
+				unpaired = true;
+				pseudoknot=true;
+				break;
+			}
+		}
+
+		if(k>=i){ // It had > but for me, it should be >=?
+			V_temp = qbt1*get_energy_WM(i,k-1);
+			qt+=V_temp;
+			if(qt>=r) break;
+
+			V_temp = qbt2*get_energy_WM(i,k-1);
+			qt+=V_temp;
+			if(qt>=r){
+				pseudoknot = true;
+				break;
+			}
+		}
+
+	}
+	if (m + i > j-TURN) {
+		printf("backtracking failed for WM at i=%d and j =%d\n",i,j);
+		exit(0);
+	}
+	if(!unpaired){
+		Sample_WM(i,k-1,samples,tree);
+	}
+	if(!pseudoknot){
+		Sample_V(k,j,samples,tree);
+	} else {
+		Sample_WMB(k,j,samples,tree);
+	}
+	
+
+}
+void W_final_pf::Sample_WMV(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WMv at %d and %d\n",i,j);
+	pf_t fbd = 0;
+	pf_t qt = 0;
+
+	pf_t V_temp = 0.;
+
+	for(;j>i+TURN;--j){
+		if(tree.tree[j].pair < 0){ // Checking if j can be unpaired
+			pf_t r = vrna_urn()*(get_energy_WMv(i,j) - fbd);
+
+			V_temp = get_energy_WMv(i,j-1)*expMLbase[1];
+			qt = V_temp;
+			if (r > qt) {
+				break;
+			}
+		} else{
+			break; // j can't be unpaired so it must be paired
+		}
+	}
+
+	if (i+TURN == j) {
+		printf("backtracking failed for WMV\n");
+		exit(0); /* error */
+	}
+
+	Sample_V(i,j,samples,tree);
+
+}
+
+void W_final_pf::Sample_WMP(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WMp at %d and %d\n",i,j);
+	pf_t fbd = 0;
+	pf_t qt = 0;
+
+	pf_t V_temp = 0.;
+
+	for(;j>i+TURN;--j){
+		if(tree.tree[j].pair < 0){ // Checking if j can be unpaired
+			pf_t r = vrna_urn()*(get_energy_WMp(i,j) - fbd);
+
+			V_temp = get_energy_WMp(i,j-1)*expMLbase[1];
+			qt = V_temp;
+			if (r > qt) {
+				break;
+			}
+		}
+		else{
+			break; // j can't be unpaired so it must be paired
+		}
+	}
+
+	if (i+TURN+1 == j) { // I'm kinda assuming something like ([..)] for this
+		printf("backtracking failed for WMP\n");
+		exit(0); /* error */
+	}
+
+	Sample_WMB(i,j,samples,tree);
+
+}
+
+void W_final_pf::Sample_WMB(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WMB at %d and %d\n",i,j);
+	cand_pos_t l =j;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+	cand_pos_t Bp_lj = 0;
+	cand_pos_t bp_j = 0;
+
+	pf_t V_temp = 0.;
+
+	pf_t r = vrna_urn() * (get_energy_WMB(i,j) - fbd);
+
+	V_temp = get_energy_WMBP(i,j);
+	qt+=V_temp;
+	if(qt>=r){
+		Sample_WMBP(i,j,samples,tree);
+		return;
+	}
+
+	if (tree.tree[j].pair >= 0 && j > tree.tree[j].pair && tree.tree[j].pair > i){
+		bp_j = tree.tree[j].pair;
+		for (l = (bp_j +1); (l < j); ++l){
+			if(tree.tree[l].pair>0) continue;
+			Bp_lj = tree.Bp(l,j);
+			if (Bp_lj >= 0 && Bp_lj<n){
+                V_temp = get_BE(bp_j,j,tree.tree[Bp_lj].pair,Bp_lj,tree)*get_energy_WMBP(i,l)*get_energy_WI(l+1,Bp_lj-1)*expPB_penalty;
+				qt+=V_temp;
+				if(qt>=r){
+					break;
+				}
+			}
+		}
+		
+	}
+	if(l<j){
+		Sample_BE(bp_j,j,tree.tree[Bp_lj].pair,Bp_lj,samples,tree);
+		Sample_WMBP(i,l,samples,tree);
+		Sample_WI(l+1,Bp_lj-1,samples,tree);
+	}
+	else{
+		printf("backtracking failed for WMB\n");
+		exit(0); /* error */
+	}
+}
+
+void W_final_pf::Sample_WI(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WI at %d and %d\n",i,j);
+	cand_pos_t k;
+	pf_t fbd = 0;
+	pf_t qt = 0, qbt1 = 0, qbt2 = 0;
+	bool pseudoknot = false;
+
+	pf_t V_temp = 0;
+	if(j>i){
+		for(;j>i+TURN;--j){
+			if(tree.tree[j].pair < 0){ // Checking if j can be unpaired
+				pf_t r = vrna_urn()*(get_energy_WI(i,j) - fbd);
+
+				V_temp = get_energy_WI(i,j-1)*expPUP_pen[1];
+				qt = V_temp;
+				if (r > qt) {
+					break;
+				}
+			}
+			else{
+				break; // j can't be unpaired so it must be paired
+			}
+		}
+		if (j <= i + TURN) return; // No more base pairs can occur, but still successful
+
+		qt = 0;
+		pf_t qm_rem  = get_energy_WI(i,j) - V_temp;
+
+		pf_t r = vrna_urn() * (qm_rem - fbd);
+
+		for (k=i; k <= j -TURN-1; k++){
+			qbt1 = get_energy(k,j)*expPPS_penalty;
+			qbt2 = get_energy_WMB(k,j)*expPSP_penalty*expPPS_penalty;
+
+			V_temp = qbt1*get_energy_WI(i,k-1);
+			qt+=V_temp;
+			if(qt>=r) break;
+
+			V_temp = qbt2*get_energy_WI(i,k-1);
+			qt+=V_temp;
+			if(qt>=r){
+				pseudoknot = true;
+				break;
+			}
+		}
+
+		Sample_WI(i,k-1,samples,tree);
+		if(!pseudoknot){
+			Sample_V(k,j,samples,tree);
+		}
+		else{
+			Sample_WMB(k,j,samples,tree);
+		}
+	}
+}
+
+void W_final_pf::Sample_WIP(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WIP at %d and %d\n",i,j);
+	cand_pos_t k;
+	pf_t fbd = 0;
+	pf_t qt = 0, qbt1 = 0, qbt2 = 0;
+	bool unpaired = false;
+	bool pseudoknot = false;
+
+	pf_t V_temp = 0;
+	if(j<=i) return;
+	for(;j>i+TURN;--j){
+		if(tree.tree[j].pair < 0){ // Checking if j can be unpaired
+			pf_t r = vrna_urn()*(get_energy_WIP(i,j) - fbd);
+
+			V_temp = get_energy_WIP(i,j-1)*expcp_pen[1];
+			qt = V_temp;
+			if (r > qt) {
+				break;
+			}
+		}
+		else{
+			break; // j can't be unpaired so it must be paired
+		}
+	}
+	if (i+TURN == j) {
+		printf("backtracking failed for WIP\n");
+		exit(0); /* error */
+	}
+
+	qt = 0;
+  	pf_t qm_rem  = get_energy_WIP(i,j) - V_temp;
+
+	pf_t r = vrna_urn() * (qm_rem - fbd);
+
+	for (k=i; k < j-TURN; ++k){
+		qbt1 = get_energy(k,j)*expbp_penalty;
+		qbt2 = get_energy_WMB(k,j)*expbp_penalty*expPSM_penalty;
+
+		bool can_pair = tree.up[k-1] >= (k-i);
+		if(can_pair){
+			V_temp = qbt1*expcp_pen[k-i];
+			qt+=V_temp;
+			if (qt >= r) {
+				unpaired = true;
+				break;
+			}
+
+			V_temp =  qbt2*expcp_pen[k-i];
+			qt+=V_temp;
+			if (qt >= r) {
+				unpaired = true;
+				pseudoknot=true;
+				break;
+			}
+		}
+
+		if(k>=i){ // It had > but for me, it should be >=?
+			V_temp = qbt1*get_energy_WM(i,k-1);
+			qt+=V_temp;
+			if(qt>=r) break;
+
+			V_temp = qbt2*get_energy_WM(i,k-1);
+			qt+=V_temp;
+			if(qt>=r){
+				pseudoknot = true;
+				break;
+			}
+		}
+	}
+
+	if (k + TURN >= j) {
+		printf("backtracking failed for WIP right base pair with k=%d and j =%d, and qt=%f with r-%f\n",k,j,qt,r);
+		exit(0);
+	}
+	if(!unpaired){
+		Sample_WIP(i,k-1,samples,tree);
+	}
+	if(!pseudoknot){
+		Sample_V(k,j,samples,tree);
+	} else {
+		Sample_WMB(k,j,samples,tree);
+	}
+}
+
+void W_final_pf::Sample_WMBW(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WMBW at %d and %d\n",i,j);
+	cand_pos_t l = j;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+
+	pf_t V_temp = 0;
+	pf_t r = vrna_urn()*(get_energy_WMBW(i,j) - fbd);
+	if(tree.tree[j].pair < j){
+		for(l = i+1; l<j; l++){
+			if (tree.tree[l].pair < 0 && tree.tree[l].parent->index > -1 && tree.tree[j].parent->index > -1 && tree.tree[j].parent->index == tree.tree[l].parent->index){
+				V_temp = get_energy_WMBP(i,l)*get_energy_WI(l+1,j);
+				qt+=V_temp;
+				if(qt>=r){
+					break;
+				}
+			}
+		}
+	}
+	if(l>=j){
+		printf("Backtracking failed in WMBW for pair (%d,%d) with qt=%f < r=%f and l = %d\n",i,j,qt,r,l);
+		exit(0);
+	}
+	Sample_WMBP(i,l,samples,tree);
+	Sample_WI(l+1,j,samples,tree);
+}
+
+void W_final_pf::Sample_WMBP(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("WMBP at %d and %d\n",i,j);
+	cand_pos_t l = j;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+	cand_pos_t bp_il = 0;
+	cand_pos_t Bp_lj = 0;
+	cand_pos_t B_lj = 0;
+	cand_pos_t b_ij = tree.b(i,j);
+	bool case1=false,case2=false,case4=false;
+
+	pf_t V_temp = 0;
+	pf_t r = vrna_urn()*(get_energy_WMBP(i,j) - fbd);
+
+	if (tree.tree[j].pair < 0){
+        for (l = i+1; l<j-TURN ; ++l){
+			// Mateo Jan 2025 Added exterior cases to consider when looking at band borders. Solved case of [.(.].[.).]
+			int ext_case = compute_exterior_cases(l,j,tree);
+			if((b_ij > 0 && l < b_ij) || (b_ij<0  && ext_case == 0)){
+				bp_il = tree.bp(i,l);
+				Bp_lj = tree.Bp(l,j);
+				if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){ 
+					B_lj = tree.B(l,j);
+					if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
+						V_temp = get_BE(tree.tree[B_lj].pair,B_lj,tree.tree[Bp_lj].pair,Bp_lj,tree)*get_energy_WMBP(i,l-1)*get_energy_VP(l,j)*pow(expPB_penalty,2);
+						qt+=V_temp;
+						if(qt>=r){
+							case1=true;
+							break;
+						}
+					}
+				}
+			}			
+        }
+    }
+	if(case1){
+		Sample_BE(tree.tree[B_lj].pair,B_lj,tree.tree[Bp_lj].pair,Bp_lj,samples,tree);
+		Sample_WMBP(i,l-1,samples,tree);
+		Sample_VP(l,j,samples,tree);
+		return;
+	}
+
+    if (tree.tree[j].pair < 0){
+        for (l = i+1; l<j-TURN ; l++){
+            bp_il = tree.bp(i,l);
+            Bp_lj = tree.Bp(l,j);
+			// Mateo Jan 2025 Added exterior cases to consider when looking at band borders. Solved case of [.(.].[.).]
+			int ext_case = compute_exterior_cases(l,j,tree);
+			if((b_ij > 0 && l < b_ij) || (b_ij<0  && ext_case == 0)){
+				if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){ 
+					B_lj = tree.B(l,j);
+					if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
+						V_temp = get_BE(tree.tree[B_lj].pair,B_lj,tree.tree[Bp_lj].pair,Bp_lj,tree)*get_energy_WMBW(i,l-1)*get_energy_VP(l,j)*pow(expPB_penalty,2);
+						qt+=V_temp;
+						if(qt>=r){
+							case2=true;
+							break;
+						}
+					}
+				}   
+			}  
+        }
+	}
+	if(case2){
+		Sample_BE(tree.tree[B_lj].pair,B_lj,tree.tree[Bp_lj].pair,Bp_lj,samples,tree);
+		Sample_WMBW(i,l-1,samples,tree);
+		Sample_VP(l,j,samples,tree);
+		return;
+	}
+
+	V_temp = get_energy_VP(i,j)*expPB_penalty;
+	qt+=V_temp;
+    if(qt>=r){
+		Sample_VP(i,j,samples,tree);
+		return;
+	}
+
+    if(tree.tree[j].pair < 0 && tree.tree[i].pair >= 0){
+		for (l = i+1; l < j; l++){
+			bp_il = tree.bp(i,l);
+			if(bp_il >= 0 && bp_il < n && l+TURN <= j){
+				if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
+					V_temp = get_BE(i,tree.tree[i].pair,bp_il,tree.tree[bp_il].pair,tree)*get_energy_WI(bp_il+1,l-1)*get_energy_VP(l,j)*pow(expPB_penalty,2);
+					qt+=V_temp;
+					if(qt>=r){
+						case4=true;
+						break;
+					}
+				}
+			}
+			
+		}
+	}
+	if(case4){
+		Sample_BE(i,tree.tree[i].pair,bp_il,tree.tree[bp_il].pair,samples,tree);
+		Sample_WI(bp_il+1,l-1,samples,tree);
+		Sample_VP(l,j,samples,tree);
+	} else{
+		printf("backtracking failed for WMBP\n");
+		exit(0);
+	}
+
+}
+
+void W_final_pf::Sample_VP(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("VP at %d and %d\n",i,j);
+	cand_pos_t k,l;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+
+	pf_t V_temp = 0;
+	pf_t r = vrna_urn()*(get_energy_VP(i,j) - fbd);
+
+	std::pair <cand_pos_tu,cand_pos_tu> base_pair (i,j);
+	++samples[base_pair]; // Increments the base pair found in VP
+
+	cand_pos_t Bp_ij = tree.Bp(i,j);
+	cand_pos_t B_ij = tree.B(i,j);
+	cand_pos_t b_ij = tree.b(i,j);
+	cand_pos_t bp_ij = tree.bp(i,j);
+
+	if((tree.tree[i].parent->index) > 0 && (tree.tree[j].parent->index) < (tree.tree[i].parent->index) && Bp_ij >= 0 && B_ij >= 0 && bp_ij < 0){
+		V_temp = (get_energy_WI(i+1,Bp_ij-1)*get_energy_WI(B_ij+1,j-1));
+		V_temp *= scale[2];
+		qt+=V_temp;
+        if(qt>=r){
+			Sample_WI(i+1,Bp_ij-1,samples,tree);
+			Sample_WI(B_ij+1,j-1,samples,tree);
+			return;
+		}
+	}
+	if ((tree.tree[i].parent->index) < (tree.tree[j].parent->index) && (tree.tree[j].parent->index) > 0 && b_ij>= 0 && bp_ij >= 0 && Bp_ij < 0){
+		V_temp = (get_energy_WI(i+1,b_ij-1)*get_energy_WI(bp_ij+1,j-1));
+		V_temp *= scale[2];
+        qt+=V_temp;
+		if(qt>=r){
+			Sample_WI(i+1,b_ij-1,samples,tree);
+			Sample_WI(bp_ij+1,j-1,samples,tree);
+			return;
+		}
+	}
+	if((tree.tree[i].parent->index) > 0 && (tree.tree[j].parent->index) > 0 && Bp_ij >= 0 && B_ij >= 0  && b_ij >= 0 && bp_ij>= 0){
+		V_temp = (get_energy_WI(i+1,Bp_ij-1)*get_energy_WI(B_ij+1,b_ij-1)*get_energy_WI(bp_ij+1,j-1));
+		V_temp *= scale[2];
+        qt+=V_temp;
+		if(qt>=r){
+			Sample_WI(i+1,Bp_ij-1,samples,tree);
+			Sample_WI(B_ij+1,b_ij-1,samples,tree);
+			Sample_WI(bp_ij+1,j-1,samples,tree);
+			return;
+		}
+	}
+	pair_type ptype_closingip1jm1 = pair[S_[i+1]][S_[j-1]];
+	if((tree.tree[i+1].pair) < -1 && (tree.tree[j-1].pair) < -1 && ptype_closingip1jm1>0){
+		V_temp = (get_e_stP(i,j)*get_energy_VP(i+1,j-1));
+		V_temp *= scale[2];
+        qt+=V_temp;
+		if(qt>=r){
+			Sample_VP(i+1,j-1,samples,tree);
+			return;
+		}
+	}
+
+	cand_pos_t min_borders = std::min((cand_pos_tu) Bp_ij, (cand_pos_tu) b_ij);
+	cand_pos_t edge_i = std::min(i+MAXLOOP+1,j-TURN-1);
+	min_borders = std::min(min_borders,edge_i);
+	for (k = i+1; k < min_borders; ++k){
+		if (tree.tree[k].pair < -1 && (tree.up[(k)-1] >= ((k)-(i)-1))){
+			cand_pos_t max_borders = std::max(bp_ij,B_ij)+1;
+			cand_pos_t edge_j = k+j-i-MAXLOOP-2;
+			max_borders = std::max(max_borders,edge_j);
+			for (l = j-1; l > max_borders ; --l){
+				pair_type ptype_closingkj = pair[S_[k]][S_[l]];
+                if(k==i+1 && l==j-1) continue; // I have to add or else it will add a stP version and an eintP version to the sum
+				if (tree.tree[l].pair < -1 && ptype_closingkj>0 && (tree.up[(j)-1] >= ((j)-(l)-1))){
+					cand_pos_t u1 = k-i-1;
+					cand_pos_t u2 = j-l-1;
+					V_temp = (get_e_intP(i,k,l,j)*get_energy_VP(k,l));
+					V_temp *= scale[u1 + u2 + 2];
+					qt+=V_temp;
+					if(qt>=r){
+						break;
+					}	
+				}
+			}
+			if(qt>=r){
+				break;
+			}
+		}
+	}
+	if(k<min_borders){
+		Sample_VP(k,l,samples,tree);
+		return;
+	}
+
+	cand_pos_t min_Bp_j = std::min((cand_pos_tu) tree.b(i,j), (cand_pos_tu) tree.Bp(i,j));
+	cand_pos_t max_i_bp = std::max(tree.B(i,j),tree.bp(i,j));
+	for(k = i+1; k<min_Bp_j; ++k){
+		V_temp = (get_energy_WIP(i+1,k-1)*get_energy_VP(k,j-1)*expap_penalty*pow(expbp_penalty,2));
+		V_temp *= scale[2];
+		qt+=V_temp;
+		if(qt>r){
+			break;
+		}
+	}
+	if(k<min_Bp_j){
+		Sample_WIP(i+1,k-1,samples,tree);
+		Sample_VP(k,j-1,samples,tree);
+	}
+
+	for(k = max_i_bp+1; k<j; ++k){
+		V_temp = (get_energy_VP(i+1,k)*get_energy_WIP(k+1,j-1)*expap_penalty*pow(expbp_penalty,2));
+		V_temp *= scale[2];
+		qt+=V_temp;
+		if(qt>r){
+			break;
+		}
+	}
+	if(k<j){
+		Sample_VP(i+1,k,samples,tree);
+		Sample_WIP(k+1,j-1,samples,tree);
+		return;
+	}
+
+	for(k = i+1; k<min_Bp_j; ++k){
+		V_temp = (get_energy_WIP(i+1,k-1)*get_energy_VPR(k,j-1)*expap_penalty*pow(expbp_penalty,2));
+		V_temp *= scale[2];
+		qt+=V_temp;
+		if(qt>r){
+			break;
+		}
+	}
+	if(k<min_Bp_j){
+		Sample_WIP(i+1,k-1,samples,tree);
+		Sample_VPR(k,j-1,samples,tree);
+		return;
+	}
+
+	for(k = max_i_bp+1; k<j; ++k){
+		V_temp = (get_energy_VPL(i+1,k)*get_energy_WIP(k+1,j-1)*expap_penalty*pow(expbp_penalty,2));
+		V_temp *= scale[2];
+		qt+=V_temp;
+		if(qt>r){
+			break;
+		}
+	}
+	if(k<j){
+		Sample_VPL(i+1,k,samples,tree);
+		Sample_WIP(k+1,j-1,samples,tree);
+		return;
+	}
+}
+
+void W_final_pf::Sample_VPL(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("VPL at %d and %d\n",i,j);
+	cand_pos_t k;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+
+	pf_t V_temp = 0;
+	pf_t r = vrna_urn()*(get_energy_VPL(i,j) - fbd);
+	cand_pos_t min_Bp_j = std::min((cand_pos_tu) tree.b(i,j), (cand_pos_tu) tree.Bp(i,j));
+	for(k = i+1; k<min_Bp_j; ++k){
+		bool can_pair = tree.up[k-1] >= (k-i);
+		if(can_pair){
+			V_temp = (expcp_pen[k-i]*get_energy_VP(k,j));
+			qt+=V_temp;
+			if(qt>=r){
+				break;
+			}
+		}
+	}
+	if(k<min_Bp_j){
+		Sample_VP(k,j,samples,tree);
+	}
+	else{
+		printf("Backtracking error in VPL\n");
+		exit(0);
+	}
+}
+
+void W_final_pf::Sample_VPR(cand_pos_t i, cand_pos_t j, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("VPR at %d and %d\n",i,j);
+	cand_pos_t k;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+	bool unpaired = false;
+
+	pf_t V_temp = 0;
+	pf_t r = vrna_urn()*(get_energy_VPR(i,j) - fbd);
+
+	cand_pos_t max_i_bp = std::max(tree.B(i,j),tree.bp(i,j));
+	for(k = max_i_bp+1; k<j; ++k){
+		bool can_pair = tree.up[j-1] >= (j-k);
+		V_temp = (get_energy_VP(i,k)*get_energy_WIP(k+1,j));
+		qt+= V_temp;
+		if(qt>=r){
+			break;
+		}
+		if(can_pair) {
+			V_temp = (get_energy_VP(i,k)*expcp_pen[k-i]);
+			qt+=V_temp;
+			if(qt>=r){
+				unpaired=true;
+				break;
+			}
+		}
+	}
+	if(k==j){
+		printf("Backtracking error in VPR\n");
+		exit(0);
+	}
+
+	if(!unpaired){
+		Sample_WIP(k+1,j,samples,tree);
+	}
+	Sample_VP(i,k,samples,tree);
+
+}
+// I believe this differs in that for some of this, I don't even need to calculate sampling
+void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t jp, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+	if(debug) printf("BE at %d and %d, and %d and %d\n",i,j,ip,jp);
+	cand_pos_t l=j;
+	cand_pos_t lp=j;
+	pf_t fbd = 0;
+	pf_t qt = 0;
+	bool unpaired_left = false;
+	bool unpaired_right = false;
+
+
+	pf_t V_temp = 0;
+	pf_t r = vrna_urn()*(get_BE(i,j,ip,jp,tree) - fbd);
+	
+	if (!( i >= 1 && i <= ip && ip < jp && jp <= j && j <= n && tree.tree[i].pair > 0 && tree.tree[j].pair > 0 && tree.tree[ip].pair > 0 && tree.tree[jp].pair > 0 && tree.tree[i].pair == j && tree.tree[j].pair == i && tree.tree[ip].pair == jp && tree.tree[jp].pair == ip)){ //impossible cases
+		printf("Backtracking failed in BE: impossible case -- %d and %d, and %d and %d\n",i,j,ip,jp);
+		exit(0);
+	}
+
+	if (tree.tree[i].pair != j || tree.tree[ip].pair != jp){
+		printf("Backtracking failed in BE: base case: i.j and ip.jp must be in G\n");
+		exit(0);
+	}
+
+	std::pair <cand_pos_tu,cand_pos_tu> base_pair (i,j);
+	++samples[base_pair]; // Increments the base pair found in BE
+
+	if(i == ip && j == jp && i<j){
+		return;
+	}
+
+	if(tree.tree[i+1].pair == j-1){
+		Sample_BE(i+1,j-1,ip,jp,samples,tree);
+		return;
+	}
+
+	for(l = i+1; l<= ip ; l++){
+		if (tree.tree[l].pair >= -1 && jp <= tree.tree[l].pair && tree.tree[l].pair < j){
+			lp = tree.tree[l].pair;
+
+			bool empty_region_il = (tree.up[(l)-1] >= l-i-1); //empty between i+1 and l-1
+			bool empty_region_lpj = (tree.up[(j)-1] >= j-lp-1); // empty between lp+1 and j-1
+			bool weakly_closed_il = tree.weakly_closed(i+1,l-1); // weakly closed between i+1 and l-1
+			bool weakly_closed_lpj = tree.weakly_closed(lp+1,j-1); // weakly closed between lp+1 and j-1
+
+			if (empty_region_il && empty_region_lpj){//&& !(ip == (i+1) && jp==(j-1)) && !(l == (i+1) && lp == (j-1))){
+				cand_pos_t u1 = l-i-1;
+				cand_pos_t u2 = j-lp-1;
+				V_temp = get_e_intP(i,l,lp,j)*get_BE(l,lp,ip,jp,tree);
+				V_temp *= scale[u1+u2+2];
+                qt += V_temp; // Added to e_intP that l != i+1 and lp != j-1 at the same time
+				if(qt>=r){
+					unpaired_left = true;
+					unpaired_right = true;
+					break;
+				}
+			}
+			if (weakly_closed_il && weakly_closed_lpj){
+				V_temp = get_energy_WIP(i+1,l-1)*get_BE(l,lp,ip,jp,tree)*get_energy_WIP(lp+1,j-1)*expap_penalty*pow(expbp_penalty,2);
+				V_temp *= scale[2];
+                qt += V_temp;
+				if(qt>=r){
+					break;
+				}
+			}
+			if (weakly_closed_il && empty_region_lpj){
+				V_temp = get_energy_WIP(i+1,l-1)*get_BE(l,lp,ip,jp,tree)*expcp_pen[j-lp+1]*expap_penalty*pow(bp_penalty,2);
+				V_temp*=scale[2];
+                qt += V_temp;
+				if(qt>=r){
+					unpaired_right = true;
+					break;
+				}
+			}
+			if (empty_region_il && weakly_closed_lpj){
+				V_temp = expcp_pen[l-i+1]*get_BE(l,lp,ip,jp,tree)*get_energy_WIP(lp+1,j-1)*expap_penalty*pow(bp_penalty,2);
+				V_temp *= scale[2];
+                qt += V_temp;
+				if(qt>=r){
+					unpaired_left = true;
+					break;
+				}
+			}
+		}
+	}
+
+	if(!unpaired_left){
+		Sample_WIP(i+1,l-1,samples,tree);
+	}
+	if(!unpaired_right){
+		Sample_WIP(lp+1,j-1,samples,tree);
+	}
+	Sample_BE(l,lp,ip,jp,samples,tree);
+
+
+}
+
+void W_final_pf::bpp_symbol(cand_pos_t i, cand_pos_t j, pf_t frequency, sparse_tree &tree) {
+    // As we want our results to be comparable to ViennaRNA, we will keep the thresholds the same
+	// if(i==31) printf("i is %d and j is %d and frequency is %f\n",i,j,frequency);
+	pf_t probability = (frequency/num_samples);
+	if(tree.weakly_closed(i,j)){
+		if(probability > 0.667){
+			structure[i-1] = '(';
+			structure[j-1] = ')';
+		}
+		else if(probability > 0.334){
+			structure[i-1] = '{';
+			structure[j-1] = '}';
+		}
+		else{
+			structure[i-1] = '.';
+		}
+	} else {
+		if(probability > 0.667){
+			structure[i-1] = '[';
+			structure[j-1] = ']';
+		}
+		else if(probability > 0.334){
+			structure[i-1] = '/';
+			structure[j-1] = '\\';
+		}
+		else{
+			structure[i-1] = '.';
+		}
+	}
+}
+// This doesn't work optimally as is -- at the very least, it works more like RNAfold's at the moment.
+// If 10.50 has a prob of .4, it gets {}. If you 30.50 also has a prob of .4, it replaces 10.50 and leaves an opening base pair hanging.
+// This might fix itself generally over many samples but could still occur
+// I could make this recursive, have it take an i and j then find the best probability for j between i->j-TURN
+// Then it would end up going with whatever gets picked first based on prob and won't overlap
+void W_final_pf::pairing_tendency(std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
+    for (cand_pos_t i = 1; i <= n; ++i) {
+		if(structure[i-1] != '.') continue;
+		cand_pos_t best_j = i+1;
+		pf_t best_samples = 0;
+		for (cand_pos_t j=1; j<=n; ++j) {
+			std::pair <cand_pos_tu,cand_pos_tu> base_pair (i,j);
+			cand_pos_tu sample_ij = samples[base_pair];
+			if(sample_ij>best_samples){
+				best_j = j;
+				best_samples = sample_ij;
+			}
+		}		
+		// We are doing 1 to n but structure is 0 -> n-1
+		bpp_symbol(i,best_j,best_samples,tree);
+    }
+}

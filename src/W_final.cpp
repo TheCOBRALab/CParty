@@ -90,14 +90,14 @@ double W_final::hfold(sparse_tree &tree){
 		
 		
 		for (cand_pos_t k=1; k<=j-TURN-1; ++k){
-		 	// m2 = compute_W_br2_restricted (j, fres, must_choose_this_branch);
-			energy_t acc = (k>1) ? W[k-1]: 0;
-			m2 = std::min(m2,acc + E_ext_Stem(V->get_energy(k,j),V->get_energy(k+1,j),V->get_energy(k,j-1),V->get_energy(k+1,j-1),S_,params_,k,j,n,tree.tree));
-			if (k == 1 || (tree.weakly_closed(1,k-1) && tree.weakly_closed(k,j))) m3 = std::min(m3,acc + WMB->get_WMB(k,j) + PS_penalty);
+			if(tree.weakly_closed(1,k-1)){
+				energy_t acc = (k>1) ? W[k-1]: 0;
+				m2 = std::min(m2,acc + E_ext_Stem(V->get_energy(k,j),V->get_energy(k+1,j),V->get_energy(k,j-1),V->get_energy(k+1,j-1),S_,params_,k,j,n,tree.tree));
+				if (k == 1 || tree.weakly_closed(k,j)) m3 = std::min(m3,acc + WMB->get_WMB(k,j) + PS_penalty);
 			}
+		}
 		W[j] = std::min({m1,m2,m3});
 	}
-
     double energy = W[n]/100.0;
 
     // backtrack

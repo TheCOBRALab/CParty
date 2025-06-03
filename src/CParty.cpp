@@ -91,10 +91,11 @@ std::string hfold(std::string seq,std::string res, double &energy, sparse_tree &
     return structure;
 }
 
-double hfold_pf(std::string seq, sparse_tree &tree, bool pk_free, int dangles, double min_en){
-	W_final_pf min_fold(seq, pk_free,dangles,min_en);
-	double energy = min_fold.hfold_pf(tree);
-    return energy;
+std::string hfold_pf(std::string seq,double &energy, sparse_tree &tree, bool pk_free, int dangles, double min_en, int num_samples){
+	W_final_pf min_fold(seq, pk_free,dangles,min_en,num_samples);
+	energy = min_fold.hfold_pf(tree);
+	std::string structure = min_fold.structure;
+    return structure;
 }
 
 void seqtoRNA(std::string &sequence){
@@ -136,6 +137,8 @@ int main (int argc, char *argv[])
 	bool pk_only = args_info.pk_only_given;
 
 	int dangles = args_info.dangles_given ? dangle_model : 2;
+
+	int num_samples = args_info.samples_given ? samples : 1000;
 
 	if(fileI != ""){
 		
@@ -187,20 +190,21 @@ int main (int argc, char *argv[])
 	cand_pos_t size = hotspot_list.size();
 	for(cand_pos_t i = 0;i<size;++i){
 		double energy;
+		double energy_pf;
 		std::string structure = hotspot_list[i].get_structure();
 
 		sparse_tree tree(structure,n);
 		std::string final_structure = hfold(seq,structure, energy,tree,pk_free,pk_only, dangles);
 
-		double pf_energy = hfold_pf(seq,tree,pk_free,dangles,energy);
+		std::string final_structure_pf = hfold_pf(seq,energy_pf,tree,pk_free,dangles,energy,num_samples);
 
 		if(!args_info.input_structure_given && energy>0.0){
 			energy = 0.0;
-			pf_energy = 0.0;
+			energy_pf = 0.0;
 			final_structure = std::string(n,'.');
 		}
 		
-		Result result(seq,hotspot_list[i].get_structure(),hotspot_list[i].get_energy(),final_structure,energy,pf_energy);
+		Result result(seq,hotspot_list[i].get_structure(),hotspot_list[i].get_energy(),final_structure,energy,final_structure_pf,energy_pf);
 		result_list.push_back(result);
 	}
 
@@ -219,11 +223,13 @@ int main (int argc, char *argv[])
 		std::ofstream out(fileO);
 		out << seq << std::endl;
 		out << "Restricted_" << 0 << ": " << result_list[0].get_restricted() << " (" << result_list[0].get_restricted_energy() << ")" << std::endl;
-		out << "Result_" << 0 << ":     " << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ") {" << result_list[0].get_pf_energy() << "}" << std::endl;
+		out << "Result_" << 0 << ":     " << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ")" << std::endl;
+		out << "Result_" << 0 << ":     " << result_list[0].get_final_structure_pf() << " (" << result_list[0].get_pf_energy() << ")" << std::endl;
 		for (int i=1; i < number_of_output; i++) {
 			if(result_list[i].get_final_structure() == result_list[i-1].get_final_structure()) continue;
 			out << "Restricted_" << i << ": " << result_list[i].get_restricted() << " (" << result_list[i].get_restricted_energy() << ")" << std::endl;
-			out << "Result_" << i << ":     " << result_list[i].get_final_structure() << " (" << result_list[i].get_final_energy() << ") {" << result_list[i].get_pf_energy() << "}" << std::endl;
+			out << "Result_" << i << ":     " << result_list[i].get_final_structure() << " (" << result_list[i].get_final_energy() << ")" << std::endl;
+			out << "Result_" << i << ":     " << result_list[i].get_final_structure_pf() << " (" << result_list[i].get_pf_energy() << ")" << std::endl;
 		}
 
 	}else{
@@ -232,15 +238,18 @@ int main (int argc, char *argv[])
 		//changed format for ouptut to stdout
 		std::cout << seq << std::endl;
 		if(result_list.size() == 1){
-			std::cout << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ") {" << result_list[0].get_pf_energy() << "}" << std::endl;
+			std::cout << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ")" << std::endl;
+			std::cout << result_list[0].get_final_structure_pf() << " (" << result_list[0].get_pf_energy() << ")" << std::endl;
 		}
 		else{
 			std::cout << "Restricted_" << 0 << ": " << result_list[0].get_restricted() << " (" << result_list[0].get_restricted_energy() << ")" << std::endl;
-			std::cout << "Result_" << 0 << ":     " << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ") {" << result_list[0].get_pf_energy() << "}" << std::endl;
+			std::cout << "Result_" << 0 << ":     " << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ")" << std::endl;
+			std::cout << "Result_" << 0 << ":     " << result_list[0].get_final_structure_pf() << " (" << result_list[0].get_pf_energy() << ")" << std::endl;
 			for (int i=1; i < number_of_output; i++) {
 				if(result_list[i].get_final_structure() == result_list[i-1].get_final_structure()) continue;
 				std::cout << "Restricted_" << i << ": " << result_list[i].get_restricted() << " (" << result_list[i].get_restricted_energy() << ")" << std::endl;
-				std::cout << "Result_" << i << ":     " << result_list[i].get_final_structure() << " (" << result_list[i].get_final_energy() << ") {" << result_list[i].get_pf_energy() << "}" << std::endl;
+				std::cout << "Result_" << i << ":     " << result_list[i].get_final_structure() << " (" << result_list[i].get_final_energy() << ")" << std::endl;
+			std::cout << "Result_" << i << ":     " << result_list[i].get_final_structure_pf() << " (" << result_list[i].get_pf_energy() << ")" << std::endl;
 			}
 		}
 	}
