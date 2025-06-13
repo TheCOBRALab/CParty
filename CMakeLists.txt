@@ -14,15 +14,16 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -flto")
 
 SET(SOURCE
-  src/W_final.cpp 
-  src/pseudo_loop.cpp 
-  src/part_func.cpp
-  src/CParty.cpp
+  src/W_final.cc 
+  src/pseudo_loop.cc 
+  src/part_func.cc
+  src/CParty.cc
   src/cmdline.cc
   src/Result.cc	
-  src/s_energy_matrix.cpp	
+  src/s_energy_matrix.cc	
   src/Hotspot.cc
   src/sparse_tree.cc
+  src/dot_plot.cc
 )
 
 set(constraints_SOURCE

@@ -42,6 +42,7 @@ const char *args_info_help[] = {
   "  -s, --samples          Give the number of samples foe the stochastic backtracking (default 1000)",
   // "  -S  --shape            Give a path to a shape file corresponding to the sequence given",
   "      --noConv           Do not convert DNA into RNA. This will use the Matthews 2004 parameters for DNA",
+  "      --noPS             Don't create a Postscript drawing of the base pair probabilities",
   
 
   "\nThe input sequence is read from standard input, unless it is\ngiven on the command line.\n",
@@ -72,6 +73,7 @@ static void init_args_info(struct args_info *args_info)
   args_info->samples_help = args_info_help[10] ;
   // args_info->shape_help = args_info_help[10] ;
   args_info->noConv_help = args_info_help[11] ;
+  args_info->noPS_help = args_info_help[12] ;
 }
 void
 cmdline_parser_print_version (void)
@@ -128,6 +130,7 @@ static void clear_given (struct args_info *args_info)
   args_info->samples_given = 0 ;
   // args_info->shape_given = 0 ;
   args_info->noConv_given = 0 ;
+  args_info->noPS_given = 0 ;
 }
 
 static void clear_args (struct args_info *args_info)
@@ -326,6 +329,7 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
         { "samples",	required_argument, NULL, 's' },
         // { "shape",	required_argument, NULL, 'S' },
         { "noConv",	0, NULL, 0 },
+        { "noPS",	0, NULL, 0 },
         { 0,  0, 0, 0 }
       };
 
@@ -466,6 +470,17 @@ int cmdline_parser_internal (int argc, char **argv, struct args_info *args_info,
             if (update_arg( 0 , 
                  0 , &(args_info->noConv_given),
                 &(local_args_info.noConv_given), optarg, 0, 0, ARG_NO, 0, 0,"noConv", '-', additional_error)){
+              goto failure;}
+          
+          }
+
+          if (strcmp (long_options[option_index].name, "noPS") == 0)
+          {
+          
+          
+            if (update_arg( 0 , 
+                 0 , &(args_info->noPS_given),
+                &(local_args_info.noPS_given), optarg, 0, 0, ARG_NO, 0, 0,"noPS", '-', additional_error)){
               goto failure;}
           
           }

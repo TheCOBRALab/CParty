@@ -48,6 +48,7 @@ struct args_info
   const char *samples_help; /**< @brief Specify the number of samples for the stochastic backtracking (default 1000).  */
   // const char *shape_help; /**< @brief Give shape file as additional input help description.  */
   const char *noConv_help; /**< @brief Turn off automated conversion to RNA help description.  */
+  const char *noPS_help; /**< @brief Turn off automated Postscript file generation.  */
 
 
   
@@ -64,6 +65,7 @@ struct args_info
   unsigned int samples_given ; /**< @brief Whether samples was given.  */
   // unsigned int shape_given ; /**< @brief Whether shape was given.  */
   unsigned int noConv_given ;	/**< @brief Whether noConv was given.  */
+  unsigned int noPS_given ;	/**< @brief Whether noPS was given.  */
 
   char **inputs ; /**< @brief unnamed options (options without names) */
   unsigned inputs_num ; /**< @brief unnamed options number */

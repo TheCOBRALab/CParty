@@ -1,6 +1,7 @@
 #include "part_func.hh"
 #include "pf_globals.hh"
 #include "h_externs.hh"
+#include "dot_plot.hh"
 
 #include <string>
 #include <iostream>
@@ -32,11 +33,12 @@
     )
 
 
-W_final_pf::W_final_pf(std::string seq, bool pk_free, int dangle, double energy, int num_samples) : exp_params_(scale_pf_parameters())
+W_final_pf::W_final_pf(std::string seq, bool pk_free, int dangle, double energy, int num_samples, bool PSplot) : exp_params_(scale_pf_parameters())
 {
     this->seq = seq;
     this->n = seq.length();
     this->pk_free = pk_free;
+	this->PSplot = PSplot;
 	this->num_samples = num_samples;
 
     make_pair_matrix();
@@ -206,6 +208,10 @@ double W_final_pf::hfold_pf(sparse_tree &tree){
 	}
 
 	pairing_tendency(samples,tree);
+
+	if(PSplot){
+		create_dot_plot(seq,samples,num_samples);
+	}
 
     return energy;
 }
@@ -1717,7 +1723,6 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
 
 void W_final_pf::bpp_symbol(cand_pos_t i, cand_pos_t j, pf_t frequency, sparse_tree &tree) {
     // As we want our results to be comparable to ViennaRNA, we will keep the thresholds the same
-	// if(i==31) printf("i is %d and j is %d and frequency is %f\n",i,j,frequency);
 	pf_t probability = (frequency/num_samples);
 	if(tree.weakly_closed(i,j)){
 		if(probability > 0.667){

@@ -91,8 +91,8 @@ std::string hfold(std::string seq,std::string res, double &energy, sparse_tree &
     return structure;
 }
 
-std::string hfold_pf(std::string seq,double &energy, sparse_tree &tree, bool pk_free, int dangles, double min_en, int num_samples){
-	W_final_pf min_fold(seq, pk_free,dangles,min_en,num_samples);
+std::string hfold_pf(std::string seq,double &energy, sparse_tree &tree, bool pk_free, int dangles, double min_en, int num_samples, bool PSplot){
+	W_final_pf min_fold(seq, pk_free,dangles,min_en,num_samples,PSplot);
 	energy = min_fold.hfold_pf(tree);
 	std::string structure = min_fold.structure;
     return structure;
@@ -139,6 +139,8 @@ int main (int argc, char *argv[])
 	int dangles = args_info.dangles_given ? dangle_model : 2;
 
 	int num_samples = args_info.samples_given ? samples : 1000;
+
+	bool PSplot = !args_info.noPS_given;
 
 	if(fileI != ""){
 		
@@ -196,7 +198,7 @@ int main (int argc, char *argv[])
 		sparse_tree tree(structure,n);
 		std::string final_structure = hfold(seq,structure, energy,tree,pk_free,pk_only, dangles);
 
-		std::string final_structure_pf = hfold_pf(seq,energy_pf,tree,pk_free,dangles,energy,num_samples);
+		std::string final_structure_pf = hfold_pf(seq,energy_pf,tree,pk_free,dangles,energy,num_samples,PSplot);
 
 		if(!args_info.input_structure_given && energy>0.0){
 			energy = 0.0;

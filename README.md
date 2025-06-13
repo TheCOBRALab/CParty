@@ -65,7 +65,7 @@ Help
 Usage: CParty[options] [input sequence]
 ```
 
-Read input file from cmdline; predict minimum free energy, ensemble energy, and optimum structure using the RNA folding algorithm.
+Read input file from cmdline; predict minimum free energy, ensemble energy, optimum structure, and BPP structure using the RNA folding algorithm.
 
 
 ```
@@ -79,7 +79,9 @@ Read input file from cmdline; predict minimum free energy, ensemble energy, and 
   -k  --pk-only          Only add base pairs which cross the constraint structure. The constraint structure is returned if there are no energetically favorable crossing base pairs
   -d  --dangles          Specify the dangle model to be used (base is 2)
   -P, --paramFile        Read energy parameters from paramfile, instead of using the default parameter set.\n
+  -s, --samples          Give the number of samples foe the stochastic backtracking (default 1000)
       --noConv           Do not convert DNA into RNA. This will use the Matthews 2004 parameters for DNA
+      --noPS             Don't create a Postscript drawing of the base pair probabilities
   
 ```
 
@@ -95,6 +97,7 @@ Read input file from cmdline; predict minimum free energy, ensemble energy, and 
         if suboptimal structures are specified, repeated structures are skipped. That is, if different input structures come to the same conclusion, only those that are different are shown
         If no input structure is given, or suboptimal structures are greater than the number given, CParty generates hotspots to be used as input structures -- where hotspots are energetically favorable stems
         The default parameter file is DP09. This can be changed via -P and specifying the parameter file you would like
+        A Postscript file will be generated automatically showing the base pairing probabilities. This can be turned off with --noPS
     
     Sequence requirements:
         containing only characters GCAU
@@ -118,6 +121,15 @@ Read input file from cmdline; predict minimum free energy, ensemble energy, and 
             GCAACGAUGACAUACAUCGCUAGUCGACGC
             (............................)
 
+#### Output Information
+    Output text format:
+        Line1: Sequence
+        Line2: MFE structure (MFE energy)
+        Line3: BPP structure (Ensemble Energy)
+
+    Remarks:
+        The BPP structure gives an output structure based on the probabilitiy of that base pair occuring across the sampled structures. For pseudoknot-free base pairs, {} indicates .334<p<=.667 and () indicate p>.667. For pseudoknotted base pairs /\ indicates .334<p<=.667 and [] indicate p>.667.
+
 #### Example:
     Assume you are in the CParty directory
     ./build/CParty -i "/home/username/Desktop/myinputfile.txt"
@@ -128,6 +140,7 @@ Read input file from cmdline; predict minimum free energy, ensemble energy, and 
     ./build/CParty -n 3 -r "(............................)" -o "/home/username/Desktop/some_folder/outputfile.txt" GCAACGAUGACAUACAUCGCUAGUCGACGC
     ./build/CParty -k -r "(............................)" GCAACGAUGACAUACAUCGCUAGUCGACGC
     ./build/CParty -P "params/rna_Turner04.par" -r "(............................)" GCAACGAUGACAUACAUCGCUAGUCGACGC
+    ./build/CParty -s 10000 --noPS -r "(............................)" GCAACGAUGACAUACAUCGCUAGUCGACGC
 
 
 

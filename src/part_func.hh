@@ -31,7 +31,7 @@ class W_final_pf{
         std::string structure;
         int num_samples;
 
-        W_final_pf(std::string seq,bool pk_only, int dangle, double energy, int num_samples);
+        W_final_pf(std::string seq,bool pk_only, int dangle, double energy, int num_samples, bool PSplot);
         // constructor for the restricted mfe case
 
         ~W_final_pf ();
@@ -74,6 +74,7 @@ class W_final_pf{
     private:
         std::string seq;
         bool pk_free;
+        bool PSplot;
         cand_pos_t n;
         std::vector<cand_pos_t> index;
 
