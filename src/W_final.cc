@@ -76,7 +76,6 @@ double W_final::hfold(sparse_tree &tree){
 
 				if(!pk_free) WMB->compute_energies(i,j,tree);
 
-
 				V->compute_WMv_WMp(i,j,WMB->get_WMB(i,j),tree.tree);
 				V->compute_energy_WM_restricted(i,j,tree,WMB->WMB);
 			}

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
+#include <algorithm>
 
 #define debug 0
 /*
@@ -784,7 +785,6 @@ void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::unordered_map< 
 			}
 		}
 		if (j <= start + TURN) return; // No more base pairs can occur, but still successful
-
 
 		pf_t r = vrna_urn() * (W[j] - W_temp - fbd);
 		std::vector<cand_pos_t> is = boustrophedon(start, j - 1); // applies an alternating list so that the base pairing isn't biased to the right side

@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 extern "C" {
 #include "ViennaRNA/pair_mat.h"
