@@ -128,7 +128,14 @@ Read input file from cmdline; predict minimum free energy, ensemble energy, opti
         Line3: BPP structure (Ensemble Energy)
 
     Remarks:
-        The BPP structure gives an output structure based on the probabilitiy of that base pair occuring across the sampled structures. For pseudoknot-free base pairs, {} indicates .334<p<=.667 and () indicate p>.667. For pseudoknotted base pairs /\ indicates .334<p<=.667 and [] indicate p>.667.
+        The BPP structure gives an output structure based on the probabilitiy of that base pair
+        occuring across the sampled structures. For pseudoknot-free base pairs, 
+        {} indicates .334<p<=.667 and () indicate p>.667.
+        For pseudoknotted base pairs /\ indicates .334<p<=.667 and [] indicate p>.667.
+
+        Dot plot Postscript files give the output in graphical form. Input constraints
+        are in black and other probabilities are in red. The MFE structure is in the
+        bottom left while the probability structure is in the top right.
 
 #### Example:
     Assume you are in the CParty directory
