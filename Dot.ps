@@ -334,7 +334,7 @@ DPdict begin
 } def
 
 /sequence { (\
-GCAACGAUGACAUACAUCGCUAGUCGACGC
+AGCUGACUAUGUGAUCUUAUUAAAAUUAGGUUAAAUUUCGAGGUUAAAAAUAGUUUUAAUAUUGCUAUAGUCUUAGAGGUCUUGUAUAUUUAUACUUACCACACAAGAUGGACCGGAGCAGCCCUCCAAUAUCUAGUGUACCCUCGUGCUCGCUCAAACAUUAAGUGGUGUUGUGCGAAAAGAAUCUCACUUCAA
 ) } def
 /len { sequence length } bind def
 
@@ -345,42 +345,145 @@ GCAACGAUGACAUACAUCGCUAGUCGACGC
 drawseq
 %%data starts here
 
+/hsb {
+sethsbcolor
+} bind def
+
 %%draw the grid
 drawgrid
 
 %%start of base pair probability data
-1 30 1 ubox
-2 29 0.883 ubox
-5 19 0.127 ubox
-5 26 0.403 ubox
-6 18 0.167 ubox
-6 25 0.651 ubox
-7 17 0.171 ubox
-7 24 0.622 ubox
-8 16 0.172 ubox
-8 23 0.563 ubox
-9 15 0.159 ubox
-9 20 0.124 ubox
-9 25 0.122 ubox
-10 24 0.129 ubox
-11 19 0.163 ubox
-11 23 0.131 ubox
-1 30 1 lbox
-2 29 0.883 lbox
-5 19 0.127 lbox
-5 26 0.403 lbox
-6 18 0.167 lbox
-6 25 0.651 lbox
-7 17 0.171 lbox
-7 24 0.622 lbox
-8 16 0.172 lbox
-8 23 0.563 lbox
-9 15 0.159 lbox
-9 20 0.124 lbox
-9 25 0.122 lbox
-10 24 0.129 lbox
-11 19 0.163 lbox
-11 23 0.131 lbox
+0 .7 .75 hsb 2 149 0.276 ubox
+0 .7 .75 hsb 3 148 0.273 ubox
+.7 1 0 hsb 5 72 1 ubox
+.7 1 0 hsb 6 71 1 ubox
+.7 1 0 hsb 7 70 1 ubox
+.7 1 0 hsb 8 69 1 ubox
+.7 1 0 hsb 9 68 1 ubox
+.7 1 0 hsb 10 67 1 ubox
+.7 1 0 hsb 11 66 1 ubox
+0 .7 .75 hsb 13 65 0.645 ubox
+.7 1 0 hsb 18 61 1 ubox
+.7 1 0 hsb 19 60 1 ubox
+.7 1 0 hsb 20 59 1 ubox
+.7 1 0 hsb 21 58 1 ubox
+.7 1 0 hsb 22 57 1 ubox
+.7 1 0 hsb 23 56 1 ubox
+.7 1 0 hsb 24 55 1 ubox
+.7 1 0 hsb 25 54 1 ubox
+.7 1 0 hsb 26 53 1 ubox
+.7 1 0 hsb 27 52 1 ubox
+.7 1 0 hsb 28 51 1 ubox
+0 .7 .75 hsb 31 47 0.238 ubox
+0 .7 .75 hsb 31 48 0.281 ubox
+0 .7 .75 hsb 32 46 0.269 ubox
+0 .7 .75 hsb 32 47 0.271 ubox
+0 .7 .75 hsb 33 45 0.242 ubox
+0 .7 .75 hsb 34 44 0.188 ubox
+0 .7 .75 hsb 34 45 0.444 ubox
+0 .7 .75 hsb 35 44 0.571 ubox
+0 .7 .75 hsb 36 43 0.587 ubox
+0 .7 .75 hsb 37 42 0.4 ubox
+0 .7 .75 hsb 76 145 0.423 ubox
+0 .7 .75 hsb 77 144 0.416 ubox
+0 .7 .75 hsb 78 100 0.489 ubox
+0 .7 .75 hsb 78 143 0.38 ubox
+0 .7 .75 hsb 79 99 0.495 ubox
+0 .7 .75 hsb 79 142 0.332 ubox
+0 .7 .75 hsb 80 98 0.336 ubox
+.7 1 0 hsb 84 95 1 ubox
+.7 1 0 hsb 85 94 1 ubox
+.7 1 0 hsb 86 93 1 ubox
+.7 1 0 hsb 87 92 1 ubox
+.7 1 0 hsb 101 139 1 ubox
+.7 1 0 hsb 102 138 1 ubox
+.7 1 0 hsb 103 137 1 ubox
+.7 1 0 hsb 104 136 1 ubox
+.7 1 0 hsb 106 134 1 ubox
+.7 1 0 hsb 107 133 1 ubox
+.7 1 0 hsb 108 132 1 ubox
+.7 1 0 hsb 109 131 1 ubox
+.7 1 0 hsb 110 130 1 ubox
+.7 1 0 hsb 115 127 1 ubox
+.7 1 0 hsb 116 126 1 ubox
+.7 1 0 hsb 117 125 1 ubox
+.7 1 0 hsb 118 124 1 ubox
+0 .7 .75 hsb 121 149 0.13 ubox
+0 .7 .75 hsb 122 148 0.129 ubox
+.7 1 0 hsb 150 178 1 ubox
+.7 1 0 hsb 151 177 1 ubox
+.7 1 0 hsb 152 176 1 ubox
+.7 1 0 hsb 153 175 1 ubox
+.7 1 0 hsb 157 172 1 ubox
+.7 1 0 hsb 158 171 1 ubox
+.7 1 0 hsb 159 170 1 ubox
+.7 1 0 hsb 160 169 1 ubox
+.7 1 0 hsb 161 168 1 ubox
+0 .7 .75 hsb 163 192 0.604 ubox
+0 .7 .75 hsb 164 191 0.752 ubox
+0 .7 .75 hsb 165 190 0.778 ubox
+0 .7 .75 hsb 166 189 0.744 ubox
+0 .7 .75 hsb 167 188 0.682 ubox
+0 .7 .75 hsb 167 188 1 lbox
+0 .7 .75 hsb 166 189 1 lbox
+0 .7 .75 hsb 165 190 1 lbox
+0 .7 .75 hsb 164 191 1 lbox
+0 .7 .75 hsb 163 192 1 lbox
+.7 1 0 hsb 161 168 1 lbox
+.7 1 0 hsb 160 169 1 lbox
+.7 1 0 hsb 159 170 1 lbox
+.7 1 0 hsb 158 171 1 lbox
+.7 1 0 hsb 157 172 1 lbox
+.7 1 0 hsb 153 175 1 lbox
+.7 1 0 hsb 152 176 1 lbox
+.7 1 0 hsb 151 177 1 lbox
+.7 1 0 hsb 150 178 1 lbox
+.7 1 0 hsb 118 124 1 lbox
+.7 1 0 hsb 117 125 1 lbox
+.7 1 0 hsb 116 126 1 lbox
+.7 1 0 hsb 115 127 1 lbox
+.7 1 0 hsb 110 130 1 lbox
+.7 1 0 hsb 109 131 1 lbox
+.7 1 0 hsb 108 132 1 lbox
+.7 1 0 hsb 107 133 1 lbox
+.7 1 0 hsb 106 134 1 lbox
+.7 1 0 hsb 104 136 1 lbox
+.7 1 0 hsb 103 137 1 lbox
+.7 1 0 hsb 102 138 1 lbox
+.7 1 0 hsb 101 139 1 lbox
+.7 1 0 hsb 87 92 1 lbox
+.7 1 0 hsb 86 93 1 lbox
+.7 1 0 hsb 85 94 1 lbox
+.7 1 0 hsb 84 95 1 lbox
+0 .7 .75 hsb 79 142 1 lbox
+0 .7 .75 hsb 78 143 1 lbox
+0 .7 .75 hsb 77 144 1 lbox
+0 .7 .75 hsb 76 145 1 lbox
+0 .7 .75 hsb 34 44 1 lbox
+0 .7 .75 hsb 33 45 1 lbox
+0 .7 .75 hsb 32 46 1 lbox
+0 .7 .75 hsb 31 47 1 lbox
+.7 1 0 hsb 28 51 1 lbox
+.7 1 0 hsb 27 52 1 lbox
+.7 1 0 hsb 26 53 1 lbox
+.7 1 0 hsb 25 54 1 lbox
+.7 1 0 hsb 24 55 1 lbox
+.7 1 0 hsb 23 56 1 lbox
+.7 1 0 hsb 22 57 1 lbox
+.7 1 0 hsb 21 58 1 lbox
+.7 1 0 hsb 20 59 1 lbox
+.7 1 0 hsb 19 60 1 lbox
+.7 1 0 hsb 18 61 1 lbox
+0 .7 .75 hsb 13 65 1 lbox
+.7 1 0 hsb 11 66 1 lbox
+.7 1 0 hsb 10 67 1 lbox
+.7 1 0 hsb 9 68 1 lbox
+.7 1 0 hsb 8 69 1 lbox
+.7 1 0 hsb 7 70 1 lbox
+.7 1 0 hsb 6 71 1 lbox
+.7 1 0 hsb 5 72 1 lbox
+0 .7 .75 hsb 3 148 1 lbox
+0 .7 .75 hsb 2 149 1 lbox
 showpage
 end
 %%%%EOF

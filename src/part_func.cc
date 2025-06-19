@@ -34,9 +34,10 @@
     )
 
 
-W_final_pf::W_final_pf(std::string seq, bool pk_free, int dangle, double energy, int num_samples, bool PSplot) : exp_params_(scale_pf_parameters())
+W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free, int dangle, double energy, int num_samples, bool PSplot) : exp_params_(scale_pf_parameters())
 {
     this->seq = seq;
+	this->MFE_structure = MFE_structure;
     this->n = seq.length();
     this->pk_free = pk_free;
 	this->PSplot = PSplot;
@@ -211,7 +212,7 @@ double W_final_pf::hfold_pf(sparse_tree &tree){
 	pairing_tendency(samples,tree);
 
 	if(PSplot){
-		create_dot_plot(seq,samples,num_samples);
+		create_dot_plot(seq,tree.tree,MFE_structure,samples,num_samples);
 	}
 
     return energy;
@@ -845,6 +846,7 @@ void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::unordered_map< std::p
 	++samples[base_pair]; // Increments the base pair found in V
 
 	pf_t r     = vrna_urn() * (qbr - fbd);
+	// if(i==77 && j==144) printf("i is %d and j is %d and qbr is %f\n",i,j,qbr);
 	pf_t qbt1  = 0;
 	bool canH = !(tree.up[j-1]<(j-i-1));
 
@@ -854,7 +856,7 @@ void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::unordered_map< std::p
 	if (qbt1 >= r) return;
 	cand_pos_t max_k = std::min({i+MAXLOOP+1,j-TURN-2,}); // i+1+tree.up[i+1]?
 	const pair_type ptype_closing = pair[S_[i]][S_[j]];
-	for (k = i + 1; k <= max_k; k++) {
+	for (k = i+1; k <= max_k; k++) {
 		if(tree.up[k-1]>=(k-i-1)){
 			cand_pos_t min_l=std::max(k+TURN+1 + MAXLOOP+2, k+j-i) - MAXLOOP-2;
 			for (l =j-1; l>=min_l; --l){
@@ -862,6 +864,7 @@ void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::unordered_map< std::p
 					cand_pos_t u1 = k-i-1;
 					cand_pos_t u2 = j-l-1;
 					V_temp = get_energy(k,l)*exp_E_IntLoop(u1,u2,ptype_closing,rtype[pair[S_[k]][S_[l]]],S1_[i+1],S1_[j-1],S1_[k-1],S1_[l+1],exp_params_)*scale[u1 + u2 + 2];
+					// if(i==77 && j==144) printf("i is %d and j is %d and k is %d and l is %d and qbt1 is %f v_temp is %f and r is %f\n",i,j,k,l,qbt1,V_temp,r);
 					qbt1 += V_temp;
 					if (qbt1 >= r) break;
 				}
@@ -873,7 +876,7 @@ void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::unordered_map< std::p
 		Sample_V(k,l,samples,tree); // Backtrack the internal loop
 		return;
 	}
-
+	// if(i==77 && j==144) printf("i is %d and j is %d and qbt1 is %f and v_temp is %f and r is %f\n",i,j,qbt1,get_energy_VM(i,j),r);
 	V_temp = get_energy_VM(i,j); // VM includes everything since it includes the basepair (i.e. not like WM2 region), so is this fine?
 	qbt1 += V_temp;
 	if (qbt1 < r) {

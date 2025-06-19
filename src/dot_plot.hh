@@ -2,6 +2,7 @@
 #define H_dotplot_H
 
 #include "part_func.hh"
+#include <sparse_tree.hh>
 #include "base_types.hh"
 #include <math.h>
 #include <fstream>
@@ -34,9 +35,9 @@ void create_PS_sequence(std::ofstream &out, std::string &seq);
 
 void create_PS_footer(std::ofstream &out);
 
-void create_PS_data(std::ofstream &out,std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, int num_samples, cand_pos_t n);
+void create_PS_data(std::ofstream &out,std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples,std::vector<Node> tree,std::string MFE_structure, int num_samples, cand_pos_t n);
 
-void create_dot_plot(std::string &seq, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, int num_samples);
+void create_dot_plot(std::string &seq,std::vector<Node> tree,std::string &MFE_structure, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, int num_samples);
 
 
 #endif

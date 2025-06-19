@@ -50,31 +50,71 @@ void create_PS_footer(std::ofstream &out){
     out << "%%%%EOF" << std::endl;
 }
 
-void create_PS_data(std::ofstream &out,std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, int num_samples, cand_pos_t n){
+void create_PS_data(std::ofstream &out,std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples,std::vector<Node> tree,std::string MFE_structure, int num_samples, cand_pos_t n){
     int min_samples = .1*num_samples;
     for(cand_pos_t i = 1; i <=n; ++i){
         for(cand_pos_t j = 1; j <=n; ++j){
             std::pair <cand_pos_tu,cand_pos_tu> base_pair (i,j);
             if(samples[base_pair]>min_samples){
                 pf_t prob = (pf_t) samples[base_pair]/num_samples;
-                out << i << " " << j << " " << prob << " ubox" << std::endl;
+                if(tree[i].pair == j){
+                    out << ".7 1 0 hsb " << i << " " << j << " " << prob << " ubox" << std::endl;
+                }
+                else{
+                    out << "0 .7 .75 hsb " << i << " " << j << " " << prob << " ubox" << std::endl;
+                }
             }
 
         }
     }
-    for(cand_pos_t i = 1; i <=n; ++i){
-        for(cand_pos_t j = 1; j <=n; ++j){
-            std::pair <cand_pos_tu,cand_pos_tu> base_pair (i,j);
-            if(samples[base_pair]>min_samples){
-                pf_t prob = (pf_t) samples[base_pair]/num_samples;
-                out << i << " " << j << " " << prob << " lbox" << std::endl;
-            }
-
+    // Decompose the MFE structure which may have both pseudoknot and pseudoknot-free base pairs and push them to the dot plot with frequency of 1
+    cand_pos_t j;
+	std::vector<cand_pos_t>  pairs;
+    std::vector<cand_pos_t>  PKpairs;
+    PKpairs.push_back(n);
+    pairs.push_back(n);
+    for (cand_pos_t i=n-1; i >=0; --i){
+        if (MFE_structure[i] == ')'){
+            pairs.push_back(i);
         }
+        if (MFE_structure[i] == ']'){
+            PKpairs.push_back(i);
+        }
+        if(pairs.size() != 0){
+            if (MFE_structure[i] == '('){
+                j = pairs[pairs.size()-1];
+                pairs.erase(pairs.end()-1);
+                if(tree[i+1].pair == j+1){
+                    out << ".7 1 0 hsb " << i+1 << " " << j+1 << " " << 1 << " lbox" << std::endl;
+                } else{
+                    out << "0 .7 .75 hsb " << i+1 << " " << j+1 << " " << 1 << " lbox" << std::endl;
+                }
+            }
+        } else {
+            std::cout << "The given structure is not valid: left parentheses before right parentheses" << std::endl;
+            exit (1);
+        }
+        if(PKpairs.size() != 0){
+            if (MFE_structure[i] == '['){
+                j = PKpairs[PKpairs.size()-1];
+                PKpairs.erase(PKpairs.end()-1);
+                out << "0 .7 .75 hsb " << i+1 << " " << j+1 << " " << 1 << " lbox" << std::endl;
+                
+            }
+        } else {
+            std::cout << "The given structure is not valid: left parentheses before right parentheses" << std::endl;
+            exit (1);
+        }
+    }
+    pairs.pop_back();
+    PKpairs.pop_back();
+    if (pairs.size() != 0 || pairs.size() != 0){
+        std::cout << "The given structure is not valid: more left parentheses than right parentheses" << std::endl;
+        exit (1);
     }
 }
 
-void create_dot_plot(std::string &seq, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, int num_samples){
+void create_dot_plot(std::string &seq,std::vector<Node> tree,std::string &MFE_structure, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, int num_samples){
 
     std::ofstream out("Dot.ps");
     cand_pos_t n = seq.length();
@@ -91,11 +131,14 @@ void create_dot_plot(std::string &seq, std::unordered_map< std::pair<cand_pos_t,
     out << "%%data starts here" << std::endl;
     out << std::endl;
 
+    out << "/hsb {\nsethsbcolor\n} bind def" << std::endl;
+    out << std::endl;
+
     out << "%%draw the grid\ndrawgrid" << std::endl;
     out <<std::endl;
     out << "%%start of base pair probability data" << std::endl;
     
-    create_PS_data(out,samples,num_samples,n);
+    create_PS_data(out,samples,tree,MFE_structure,num_samples,n);
     create_PS_footer(out);
     out.close();
 
