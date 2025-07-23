@@ -202,6 +202,8 @@ double W_final_pf::hfold_pf(sparse_tree &tree){
 	}
 
     pf_t energy = to_Energy(W[n],n);
+	// std::cout << to_Energy(W[189],189) << std::endl;
+	// std::cout << W[189] << std::endl;
 	//Base pair probability
 	structure = std::string (n,'.');
 	std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > samples;
@@ -766,7 +768,7 @@ std::vector<cand_pos_t> boustrophedon(cand_pos_t start,cand_pos_t end){
 }
 
 void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::unordered_map< std::pair<cand_pos_t,cand_pos_t>,cand_pos_t, SzudzikHash > &samples, sparse_tree &tree){
-	if(debug) printf("W at %d and %d\n",start,end);
+	if(debug) printf("W at %d and %d with W[j]=%f,%f\n",start,end,W[end],to_Energy(W[end],end));
 	cand_pos_t j = end;
 	cand_pos_t m = end;
 	pf_t fbd   = 0; /* stores weight of forbidden terms for given q[ij]*/
@@ -775,8 +777,9 @@ void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::unordered_map< 
 	if(end>start){
 		for(;j>start;--j){ // Moving through the unpaired bases in j
 			if(tree.tree[j].pair < 0){ // Checking if j can be unpaired
-				pf_t r = vrna_urn() * (W[j] - fbd);
+				pf_t r = vrna_urn() * (W[j] - fbd); 
 				W_temp = W[j-1] * scale[1];
+				// std::cout << start << "\t" << j << "\t" << r << "\t" << W_temp << std::endl;
 				if (r > (W_temp - fbds)) { // Checking if our random sample means j is paired or unpaired
 					break; // j is paired
 				}
@@ -800,6 +803,7 @@ void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::unordered_map< 
 						pf_t acc = (k>1) ? W[k-1]: 1;
 						pf_t Wkl = acc*get_energy(k,j)*exp_Extloop(k,j);
 						qt+= Wkl;
+						// printf("k is %d and j is %d and r is %f and qt is %f\n",k,j,r,qt);
 						if(qt>r){
 							break; // k pairs with j
 						}
@@ -816,7 +820,8 @@ void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::unordered_map< 
 				
 			}
 		}
-		if (m + start > j) {
+		// printf("start is %d and k is %d and j is %d\n",start,k,j);
+		if (k + start > j) {
 			  printf("backtracking failed in ext loop at %d and %d with W[j] = %f, qt:%f < r:%f\n",start,end,W[j],qt,r);
 			  /* error */
 			  exit(0);
@@ -864,8 +869,8 @@ void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::unordered_map< std::p
 					cand_pos_t u1 = k-i-1;
 					cand_pos_t u2 = j-l-1;
 					V_temp = get_energy(k,l)*exp_E_IntLoop(u1,u2,ptype_closing,rtype[pair[S_[k]][S_[l]]],S1_[i+1],S1_[j-1],S1_[k-1],S1_[l+1],exp_params_)*scale[u1 + u2 + 2];
-					// if(i==77 && j==144) printf("i is %d and j is %d and k is %d and l is %d and qbt1 is %f v_temp is %f and r is %f\n",i,j,k,l,qbt1,V_temp,r);
 					qbt1 += V_temp;
+					// if(i==32 && j==46) printf ("i is %d and j is %d and k is %d and l is %d and qbr is %f and r is %f and qbt1 is %f\n",i,j,k,l,qbr,r,qbt1);
 					if (qbt1 >= r) break;
 				}
 			}
@@ -876,7 +881,7 @@ void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::unordered_map< std::p
 		Sample_V(k,l,samples,tree); // Backtrack the internal loop
 		return;
 	}
-	// if(i==77 && j==144) printf("i is %d and j is %d and qbt1 is %f and v_temp is %f and r is %f\n",i,j,qbt1,get_energy_VM(i,j),r);
+	
 	V_temp = get_energy_VM(i,j); // VM includes everything since it includes the basepair (i.e. not like WM2 region), so is this fine?
 	qbt1 += V_temp;
 	if (qbt1 < r) {
@@ -904,9 +909,9 @@ void W_final_pf::Sample_VM(cand_pos_t i, cand_pos_t j, std::unordered_map< std::
 	bool pseudoknot = false;
 	std::vector<cand_pos_t> is = boustrophedon(i+1,j-TURN-1); // applies an alternating list so that the base pairing isn't biased to the right side
 	cand_pos_t bous_n = is.size();
-	for (m = 1; m<bous_n; ++m){ //Why don't we do boustrophedon here?
-	// for(k=i+1; k < j-TURN; ++k){
-		k = is[m];
+	// for (m = 1; m<bous_n; ++m){ //Why don't we do boustrophedon here?
+	for(k=i+1; k < j-TURN; ++k){
+		// k = is[m];
 		V_temp = get_energy_WM(i+1,k-1)*get_energy_WMv(k,j-1)*exp_Mbloop(i,j)*exp_params_->expMLclosing;
 		qt += V_temp;
 		if (qt > r) {
@@ -983,9 +988,9 @@ void W_final_pf::Sample_WM(cand_pos_t i, cand_pos_t j, std::unordered_map< std::
 	pf_t r = vrna_urn() * (qm_rem - fbd);
 	std::vector<cand_pos_t> is = boustrophedon(i,j-TURN-1); // applies an alternating list so that the base pairing isn't biased to the right side
 	cand_pos_t bous_n = is.size();
-	for (m=1; m < bous_n; ++m){
-	// for(k=i; k < j-TURN; ++k){
-		k = is[m];
+	// for (m=1; m < bous_n; ++m){
+	for(k=i; k < j-TURN; ++k){
+		// k = is[m];
 		qbt1 = get_energy(k,j)*exp_MLstem(k,j);
 		qbt2 = get_energy_WMB(k,j)*expPSM_penalty*expb_penalty;
 		bool can_pair = tree.up[k-1] >= (k-i);
@@ -1020,10 +1025,10 @@ void W_final_pf::Sample_WM(cand_pos_t i, cand_pos_t j, std::unordered_map< std::
 		}
 
 	}
-	if (m + i > j-TURN) {
-		printf("backtracking failed for WM at i=%d and j =%d\n",i,j);
-		exit(0);
-	}
+	// if (m + i > j-TURN) {
+	// 	printf("backtracking failed for WM at i=%d and j =%d\n",i,j);
+	// 	exit(0);
+	// }
 	if(!unpaired){
 		Sample_WM(i,k-1,samples,tree);
 	}
