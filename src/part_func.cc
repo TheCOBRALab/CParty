@@ -730,12 +730,12 @@ void W_final_pf::compute_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_
                 contributions += m3;
 			}
 			if (weakly_closed_il && empty_region_lpj){
-				pf_t m4 = get_energy_WIP(i+1,l-1)*get_BE(l,lp,ip,jp,tree)*expcp_pen[j-lp+1]*expap_penalty*pow(bp_penalty,2);
+				pf_t m4 = get_energy_WIP(i+1,l-1)*get_BE(l,lp,ip,jp,tree)*expcp_pen[j-lp-1]*expap_penalty*pow(bp_penalty,2);
 				m4*=scale[2];
                 contributions += m4;
 			}
 			if (empty_region_il && weakly_closed_lpj){
-				pf_t m5 = expcp_pen[l-i+1]*get_BE(l,lp,ip,jp,tree)*get_energy_WIP(lp+1,j-1)*expap_penalty*pow(bp_penalty,2);
+				pf_t m5 = expcp_pen[l-i-1]*get_BE(l,lp,ip,jp,tree)*get_energy_WIP(lp+1,j-1)*expap_penalty*pow(bp_penalty,2);
 				m5 *= scale[2];
                 contributions += m5;
 
@@ -1698,7 +1698,7 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
 				}
 			}
 			if (weakly_closed_il && empty_region_lpj){
-				V_temp = get_energy_WIP(i+1,l-1)*get_BE(l,lp,ip,jp,tree)*expcp_pen[j-lp+1]*expap_penalty*pow(bp_penalty,2);
+				V_temp = get_energy_WIP(i+1,l-1)*get_BE(l,lp,ip,jp,tree)*expcp_pen[j-lp-1]*expap_penalty*pow(bp_penalty,2);
 				V_temp*=scale[2];
                 qt += V_temp;
 				if(qt>=r){
@@ -1707,7 +1707,7 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
 				}
 			}
 			if (empty_region_il && weakly_closed_lpj){
-				V_temp = expcp_pen[l-i+1]*get_BE(l,lp,ip,jp,tree)*get_energy_WIP(lp+1,j-1)*expap_penalty*pow(bp_penalty,2);
+				V_temp = expcp_pen[l-i-1]*get_BE(l,lp,ip,jp,tree)*get_energy_WIP(lp+1,j-1)*expap_penalty*pow(bp_penalty,2);
 				V_temp *= scale[2];
                 qt += V_temp;
 				if(qt>=r){
