@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string>
 
-#define debug 1
+#define debug 0
 /*
  * If the global use_mfelike_energies flag is set, truncate doubles to int
  * values and cast back to double. This makes the energy parameters of the
@@ -306,7 +306,6 @@ void W_final_pf::compute_energy_WM_restricted(cand_pos_t i, cand_pos_t j, sparse
         contributions += (get_energy_WM(i, k - 1) * qbt2);
     }
     if (tree.tree[j].pair < 0) contributions += WM[ijminus1] * expMLbase[1];
-
     WM[ij] = contributions;
 }
 
@@ -985,21 +984,22 @@ void W_final_pf::Sample_WM(cand_pos_t i, cand_pos_t j, std::string &structure,
                 pseudoknot = true;
                 break;
             }
+		}
 
-            V_temp = get_energy_WM(i, k - 1) * qbt1;
-            qt += V_temp;
-            if (qt >= r) break;
+		V_temp = get_energy_WM(i, k - 1) * qbt1;
+		qt += V_temp;
+		if (qt >= r) break;
 
-            V_temp = get_energy_WM(i, k - 1) * qbt2;
-            qt += V_temp;
-            if (qt >= r) {
-                pseudoknot = true;
-                break;
-            }
-        }
+		V_temp = get_energy_WM(i, k - 1) * qbt2;
+		qt += V_temp;
+		if (qt >= r) {
+			pseudoknot = true;
+			break;
+		}
+        
     }
     if (k > j - TURN || qt < r) {
-        printf("backtracking failed for WM at i=%d and j =%d\n", i, j);
+        printf("backtracking failed for WM at i=%d and j =%d with k=%d, qt=%f and r =%f and qt<r=%d\n", i, j,k,qt,r,qt<r);
         exit(0);
     }
     if (!unpaired) {
@@ -1762,8 +1762,6 @@ void W_final_pf::pairing_tendency(std::unordered_map<std::pair<cand_pos_t, cand_
                 best_i = i;
             }
         }
-        if (j == 11) std::cout << best_frequency << " " << P[0] << " " << P[1] << " " << P[2] << std::endl;
-        ;
         structure[j - 1] = bpp_symbol(best_i, j, P, tree);
     }
 }

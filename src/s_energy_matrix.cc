@@ -264,8 +264,7 @@ void s_energy_matrix::compute_energy_WM_restricted(cand_pos_t i, cand_pos_t j, s
 
     for (cand_pos_t k = j - TURN - 1; k >= i; --k) {
         cand_pos_t kj = index[k] + j - k;
-        energy_t wm_kj =
-            E_MLStem(get_energy(k, j), get_energy(k + 1, j), get_energy(k, j - 1), get_energy(k + 1, j - 1), S_, params_, k, j, n, tree.tree);
+        energy_t wm_kj = E_MLStem(get_energy(k, j), get_energy(k + 1, j), get_energy(k, j - 1), get_energy(k + 1, j - 1), S_, params_, k, j, n, tree.tree);
         energy_t wmb_kj = WMB[kj] + PSM_penalty + b_penalty;
         bool can_pair = tree.up[k - 1] >= (k - i);
         if (can_pair) m1 = std::min(m1, static_cast<energy_t>((k - i) * params_->MLbase) + wm_kj);
