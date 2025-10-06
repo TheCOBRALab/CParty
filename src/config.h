@@ -80,7 +80,7 @@
 #define STDC_HEADERS 1
 
 /* only for gcc */
-#define UNUSED __attribute__ ((unused))
+#define UNUSED __attribute__((unused))
 
 /* Version number of package */
 #define VERSION "1.0"

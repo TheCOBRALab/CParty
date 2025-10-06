@@ -1,7 +1,6 @@
 #ifndef H_EXTERNS_H
 #define H_EXTERNS_H
 
-
 extern int PS_penalty;
 extern int PSM_penalty;
 extern int PSP_penalty;
