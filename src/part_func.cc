@@ -193,7 +193,7 @@ double W_final_pf::hfold_pf(sparse_tree &tree) {
         structures[structure]++;
     }
     // for (auto const& [key, val] : structures){
-    // 	std::cout << key << ':' << val << std::endl;
+	// 	std::cout << key << ':' << val << std::endl;
     // }
     pairing_tendency(samples, tree);
     frequency = (pf_t)structures[MFE_structure] / num_samples;
@@ -1087,8 +1087,7 @@ void W_final_pf::Sample_WMB(cand_pos_t i, cand_pos_t j, std::string &structure,
             // if(tree.tree[l].pair>0) continue;
             Bp_lj = tree.Bp(l, j);
             if (Bp_lj >= 0 && Bp_lj < n) {
-                V_temp =
-                    get_BE(bp_j, j, tree.tree[Bp_lj].pair, Bp_lj, tree) * get_energy_WMBP(i, l) * get_energy_WI(l + 1, Bp_lj - 1) * expPB_penalty;
+                V_temp = get_BE(bp_j, j, tree.tree[Bp_lj].pair, Bp_lj, tree) * get_energy_WMBP(i, l) * get_energy_WI(l + 1, Bp_lj - 1) * expPB_penalty;
                 qt += V_temp;
                 if (qt > r) {
                     break;
@@ -1096,10 +1095,11 @@ void W_final_pf::Sample_WMB(cand_pos_t i, cand_pos_t j, std::string &structure,
             }
         }
     }
-    if (qt > r) { // I could put this in the for loop then just do sample_WMBP if it doesn't sample in there
+    if (qt >= r) { // I could put this in the for loop then just do sample_WMBP if it doesn't sample in there
         Sample_BE(bp_j, j, tree.tree[Bp_lj].pair, Bp_lj, structure, samples, tree);
         Sample_WMBP(i, l, structure, samples, tree);
         Sample_WI(l + 1, Bp_lj - 1, structure, samples, tree);
+		return;
     }
     V_temp = get_energy_WMBP(i, j);
     qt += V_temp;
@@ -1275,13 +1275,13 @@ void W_final_pf::Sample_WMBW(cand_pos_t i, cand_pos_t j, std::string &structure,
     }
     Sample_WMBP(i, l, structure, samples, tree);
     Sample_WI(l + 1, j, structure, samples, tree);
+	return;
 }
 
 void W_final_pf::Sample_WMBP(cand_pos_t i, cand_pos_t j, std::string &structure,
                              std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> &samples, sparse_tree &tree) {
     if (debug) printf("WMBP at %d and %d\n", i, j);
     cand_pos_t l = j;
-    pf_t fbd = 0;
     pf_t qt = 0;
     cand_pos_t bp_il = 0;
     cand_pos_t Bp_lj = 0;
@@ -1290,7 +1290,7 @@ void W_final_pf::Sample_WMBP(cand_pos_t i, cand_pos_t j, std::string &structure,
     bool case1 = false, case2 = false, case4 = false;
 
     pf_t V_temp = 0;
-    pf_t r = vrna_urn() * (get_energy_WMBP(i, j) - fbd);
+    pf_t r = vrna_urn() * get_energy_WMBP(i, j);
 
     if (tree.tree[j].pair < 0) {
         for (l = i + 1; l < j - TURN; ++l) {
@@ -1377,6 +1377,7 @@ void W_final_pf::Sample_WMBP(cand_pos_t i, cand_pos_t j, std::string &structure,
         Sample_BE(i, tree.tree[i].pair, bp_il, tree.tree[bp_il].pair, structure, samples, tree);
         Sample_WI(bp_il + 1, l - 1, structure, samples, tree);
         Sample_VP(l, j, structure, samples, tree);
+		return;
     } else {
         printf("backtracking failed for WMBP\n");
         exit(0);
@@ -1491,6 +1492,7 @@ void W_final_pf::Sample_VP(cand_pos_t i, cand_pos_t j, std::string &structure,
     if (k < min_Bp_j) {
         Sample_WIP(i + 1, k - 1, structure, samples, tree);
         Sample_VP(k, j - 1, structure, samples, tree);
+		return;
     }
 
     for (k = max_i_bp + 1; k < j; ++k) {
@@ -1602,13 +1604,25 @@ void W_final_pf::Sample_VPR(cand_pos_t i, cand_pos_t j, std::string &structure,
     }
     Sample_VP(i, k, structure, samples, tree);
 }
-// I believe this differs in that for some of this, I don't even need to calculate sampling
+
 void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t jp, std::string &structure,
                            std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> &samples, sparse_tree &tree) {
-    if (debug) printf("BE at %d and %d, and %d and %d\n", i, j, ip, jp);
-    cand_pos_t l = j;
+    
+	if (debug) printf("BE at %d and %d, and %d and %d\n", i, j, ip, jp);
+
+    if (!(i >= 1 && i <= ip && ip < jp && jp <= j && j <= n && tree.tree[i].pair > 0 && tree.tree[j].pair > 0 && tree.tree[ip].pair > 0
+          && tree.tree[jp].pair > 0)) { // impossible cases
+        printf("Backtracking failed in BE: impossible case -- %d and %d, and %d and %d\n", i, j, ip, jp);
+        exit(0);
+    }
+
+    if (tree.tree[i].pair != j || tree.tree[ip].pair != jp) {
+        printf("Backtracking failed in BE: base case: i.j and ip.jp must be in G\n");
+        exit(0);
+    }
+
+	cand_pos_t l = j;
     cand_pos_t lp = j;
-    pf_t fbd = 0;
     pf_t qt = 0;
     bool unpaired_left = false;
     bool unpaired_right = false;
@@ -1620,19 +1634,7 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
     ++samples[base_pair_reversed];
 
     pf_t V_temp = 0;
-    pf_t r = vrna_urn() * (get_BE(i, j, ip, jp, tree) - fbd);
-
-    if (!(i >= 1 && i <= ip && ip < jp && jp <= j && j <= n && tree.tree[i].pair > 0 && tree.tree[j].pair > 0 && tree.tree[ip].pair > 0
-          && tree.tree[jp].pair > 0 && tree.tree[i].pair == j && tree.tree[j].pair == i && tree.tree[ip].pair == jp
-          && tree.tree[jp].pair == ip)) { // impossible cases
-        printf("Backtracking failed in BE: impossible case -- %d and %d, and %d and %d\n", i, j, ip, jp);
-        exit(0);
-    }
-
-    if (tree.tree[i].pair != j || tree.tree[ip].pair != jp) {
-        printf("Backtracking failed in BE: base case: i.j and ip.jp must be in G\n");
-        exit(0);
-    }
+    pf_t r = vrna_urn() * get_BE(i, j, ip, jp, tree);
 
     if (i == ip && j == jp && i < j) {
         return;
@@ -1651,8 +1653,9 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
             bool empty_region_lpj = (tree.up[(j)-1] >= j - lp - 1);     // empty between lp+1 and j-1
             bool weakly_closed_il = tree.weakly_closed(i + 1, l - 1);   // weakly closed between i+1 and l-1
             bool weakly_closed_lpj = tree.weakly_closed(lp + 1, j - 1); // weakly closed between lp+1 and j-1
+			pf_t expbp2 = pow(expbp_penalty, 2);
 
-            if (empty_region_il && empty_region_lpj) { //&& !(ip == (i+1) && jp==(j-1)) && !(l == (i+1) && lp == (j-1))){
+            if (empty_region_il && empty_region_lpj) {
                 cand_pos_t u1 = l - i - 1;
                 cand_pos_t u2 = j - lp - 1;
                 V_temp = get_e_intP(i, l, lp, j) * get_BE(l, lp, ip, jp, tree);
@@ -1665,8 +1668,7 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
                 }
             }
             if (weakly_closed_il && weakly_closed_lpj) {
-                V_temp = get_energy_WIP(i + 1, l - 1) * get_BE(l, lp, ip, jp, tree) * get_energy_WIP(lp + 1, j - 1) * expap_penalty
-                         * pow(expbp_penalty, 2);
+                V_temp = get_energy_WIP(i + 1, l - 1) * get_BE(l, lp, ip, jp, tree) * get_energy_WIP(lp + 1, j - 1) * expap_penalty * expbp2;
                 V_temp *= scale[2];
                 qt += V_temp;
                 if (qt >= r) {
@@ -1674,7 +1676,7 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
                 }
             }
             if (weakly_closed_il && empty_region_lpj) {
-                V_temp = get_energy_WIP(i + 1, l - 1) * get_BE(l, lp, ip, jp, tree) * expcp_pen[j - lp - 1] * expap_penalty * pow(bp_penalty, 2);
+                V_temp = get_energy_WIP(i + 1, l - 1) * get_BE(l, lp, ip, jp, tree) * expcp_pen[j - lp - 1] * expap_penalty * expbp2;
                 V_temp *= scale[2];
                 qt += V_temp;
                 if (qt >= r) {
@@ -1683,7 +1685,7 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
                 }
             }
             if (empty_region_il && weakly_closed_lpj) {
-                V_temp = expcp_pen[l - i - 1] * get_BE(l, lp, ip, jp, tree) * get_energy_WIP(lp + 1, j - 1) * expap_penalty * pow(bp_penalty, 2);
+                V_temp = expcp_pen[l - i - 1] * get_BE(l, lp, ip, jp, tree) * get_energy_WIP(lp + 1, j - 1) * expap_penalty * expbp2;
                 V_temp *= scale[2];
                 qt += V_temp;
                 if (qt >= r) {
