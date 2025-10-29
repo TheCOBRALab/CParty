@@ -238,6 +238,7 @@ int main(int argc, char *argv[]) {
         // changed format for ouptut to stdout
         std::cout << seq << std::endl;
         if (result_list.size() == 1) {
+            std::cout << result_list[0].get_restricted() << std::endl;
             std::cout << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ")" << std::endl;
             std::cout << result_list[0].get_final_structure_pf() << " (" << result_list[0].get_pf_energy() << ")" << std::endl;
         } else {

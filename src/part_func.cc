@@ -712,12 +712,12 @@ void W_final_pf::compute_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_
                 contributions += m3;
             }
             if (weakly_closed_il && empty_region_lpj) {
-                pf_t m4 = get_energy_WIP(i + 1, l - 1) * get_BE(l, lp, ip, jp, tree) * expcp_pen[j - lp - 1] * expap_penalty * pow(bp_penalty, 2);
+                pf_t m4 = get_energy_WIP(i + 1, l - 1) * get_BE(l, lp, ip, jp, tree) * expcp_pen[j - lp - 1] * expap_penalty * pow(expbp_penalty, 2);
                 m4 *= scale[2];
                 contributions += m4;
             }
             if (empty_region_il && weakly_closed_lpj) {
-                pf_t m5 = expcp_pen[l - i - 1] * get_BE(l, lp, ip, jp, tree) * get_energy_WIP(lp + 1, j - 1) * expap_penalty * pow(bp_penalty, 2);
+                pf_t m5 = expcp_pen[l - i - 1] * get_BE(l, lp, ip, jp, tree) * get_energy_WIP(lp + 1, j - 1) * expap_penalty * pow(expbp_penalty, 2);
                 m5 *= scale[2];
                 contributions += m5;
             }
@@ -1644,7 +1644,7 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
         Sample_BE(i + 1, j - 1, ip, jp, structure, samples, tree);
         return;
     }
-
+    pf_t expbp2 = pow(expbp_penalty, 2);
     for (l = i + 1; l <= ip; l++) {
         if (tree.tree[l].pair >= -1 && jp <= tree.tree[l].pair && tree.tree[l].pair < j) {
             lp = tree.tree[l].pair;
@@ -1653,8 +1653,6 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
             bool empty_region_lpj = (tree.up[(j)-1] >= j - lp - 1);     // empty between lp+1 and j-1
             bool weakly_closed_il = tree.weakly_closed(i + 1, l - 1);   // weakly closed between i+1 and l-1
             bool weakly_closed_lpj = tree.weakly_closed(lp + 1, j - 1); // weakly closed between lp+1 and j-1
-			pf_t expbp2 = pow(expbp_penalty, 2);
-
             if (empty_region_il && empty_region_lpj) {
                 cand_pos_t u1 = l - i - 1;
                 cand_pos_t u2 = j - lp - 1;
@@ -1695,6 +1693,10 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
             }
         }
     }
+    if(qt<r){
+        printf("Error in BE, qt=%f < r=%f with i=%d and j=%d and ip=%d and jp is %d\n",qt,r,i,j,ip,jp);
+        exit(0);
+    }
 
     if (!unpaired_left) {
         Sample_WIP(i + 1, l - 1, structure, samples, tree);
@@ -1704,66 +1706,59 @@ void W_final_pf::Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t
     }
     Sample_BE(l, lp, ip, jp, structure, samples, tree);
 }
-char W_final_pf::bpp_symbol(cand_pos_t i, cand_pos_t j, pf_t *P, sparse_tree &tree) {
-    if (i > j) {
-        cand_pos_t temp = i;
-        i = j;
-        j = temp;
-    }
-    bool weakly_closed_ij = tree.weakly_closed(i, j);
+
+char W_final_pf::bpp_symbol(pf_t *P) {
     if (P[0] > 0.667) return '.';
-    if (P[0] > (P[1] + P[2])) return ',';
-    if (weakly_closed_ij) {
-        if (P[1] > 0.667) return '(';
-        if (P[2] > 0.667) return ')';
-        if ((P[1] + P[2]) > P[0]) {
-            if ((P[1] / (P[1] + P[2])) > 0.667) return '{';
+    if (P[0] > (P[1] + P[2] + P[3] + P[4])) return ',';
 
-            if ((P[2] / (P[1] + P[2])) > 0.667)
-                return '}';
-            else
-                return '|';
-        }
-    } else {
-        if (P[1] > 0.667) return '[';
-        if (P[2] > 0.667) return ']';
-        if ((P[1] + P[2]) > P[0]) {
-            if ((P[1] / (P[1] + P[2])) > 0.667) return '/';
+    if (P[1] > 0.667) return '(';
+    if (P[2] > 0.667) return ')';
+    if ((P[1] + P[2]) > P[0]) {
+        if ((P[1] / (P[1] + P[2])) > 0.667) return '{';
 
-            if ((P[2] / (P[1] + P[2])) > 0.667)
-                return '\\';
-            else
-                return '|';
-        }
+        if ((P[2] / (P[1] + P[2])) > 0.667)
+            return '}';
     }
-    return ':';
+
+    if (P[3] > 0.667) return '[';
+    if (P[4] > 0.667) return ']';
+    if ((P[4] + P[5]) > P[0]) {
+        if ((P[3] / (P[3] + P[5])) > 0.667) return '/';
+
+        if ((P[4] / (P[3] + P[4])) > 0.667)
+            return '\\';
+    }
+    return '|';
+    
+    // return ':';
 }
 void W_final_pf::pairing_tendency(std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> &samples, sparse_tree &tree) {
 
     for (cand_pos_t j = 1; j <= n; j++) {
-        cand_pos_t best_i = j;
         pf_t best_frequency = 0;
-        pf_t P[3] = {1, 0, 0};
+        pf_t P[5] = {1, 0, 0, 0, 0}; // unpaired, PK-free left, PK-free right, PK left, PK right
         for (cand_pos_t i = 1; i < j; i++) {
+            bool weakly_closed_ij = tree.weakly_closed(i, j);
             std::pair<cand_pos_tu, cand_pos_tu> base_pair(i, j);
             pf_t frequency_ij = (pf_t)samples[base_pair] / num_samples;
-            P[2] += frequency_ij;
+            if(weakly_closed_ij) P[2] += frequency_ij; else P[4] += frequency_ij;
             P[0] -= frequency_ij;
             if (frequency_ij > best_frequency) {
                 best_frequency = frequency_ij;
-                best_i = i;
+
             }
         }
         for (cand_pos_t i = j + 1; i <= n; i++) {
+            bool weakly_closed_ji = tree.weakly_closed(j, i);
             std::pair<cand_pos_tu, cand_pos_tu> base_pair(j, i);
             pf_t frequency_ji = (pf_t)samples[base_pair] / num_samples;
-            P[1] += frequency_ji;
+            if(weakly_closed_ji) P[1] += frequency_ji; else P[3] += frequency_ji;
             P[0] -= frequency_ji;
             if (frequency_ji > best_frequency) {
                 best_frequency = frequency_ji;
-                best_i = i;
+
             }
         }
-        structure[j - 1] = bpp_symbol(best_i, j, P, tree);
+        structure[j - 1] = bpp_symbol(P);
     }
 }

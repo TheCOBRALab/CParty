@@ -210,7 +210,7 @@ class W_final_pf {
     int compute_exterior_cases(cand_pos_t l, cand_pos_t j, sparse_tree &tree);
 
     /*                        BPP                                           */
-    char bpp_symbol(cand_pos_t i, cand_pos_t j, pf_t *P, sparse_tree &tree);
+    char bpp_symbol(pf_t *P);
 
     void pairing_tendency(std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> &samples, sparse_tree &tree);
 
