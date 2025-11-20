@@ -202,7 +202,6 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     
     std::vector <elem_prob_s> p; // All elements with probabilities for pairs > cutoff
     std::vector <elem_prob_s> pl; // probability list
-    std::vector <elem_prob_s> pp; // probability paired list
     std::vector<pf_t> pu; // Probabilitiy unpaired list
     pu.resize(n+1,1.0);
     
@@ -213,8 +212,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     prune_plist(p,pu,pl,gamma);
 
     // // sort by i then by j and copy this to pp
-    std::sort(pl.begin(),pl.end(),comp_plist);
-    pp = pl;
+    // std::sort(pl.begin(),pl.end(),comp_plist);
     
     pf_t MEA = 0.0;
 
