@@ -10,7 +10,7 @@ class Result {
   public:
     // constructor
     Result(std::string sequence, std::string restricted, double restricted_energy, std::string final_structure, double final_energy,
-           std::string final_structure_pf, pf_t pf_energy);
+           std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA);
     // destructor
     ~Result();
 
@@ -22,6 +22,8 @@ class Result {
     double get_final_energy();
     std::string get_final_structure_pf();
     pf_t get_pf_energy();
+    std::string get_MEA_structure();
+    pf_t get_MEA();
 
     struct Result_comp {
         bool operator()(Result &x, Result &y) const {
@@ -38,6 +40,8 @@ class Result {
     double final_energy;
     std::string final_structure_pf;
     pf_t pf_energy;
+    std::string MEA_structure;
+    pf_t MEA;
 };
 
 #endif

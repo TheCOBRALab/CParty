@@ -24,6 +24,7 @@ SET(SOURCE
   src/Hotspot.cc
   src/sparse_tree.cc
   src/dot_plot.cc
+  src/mea.cc
 )
 
 set(constraints_SOURCE

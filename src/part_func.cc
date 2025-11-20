@@ -56,7 +56,6 @@ W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_fre
     WM.resize(total_length, 0);
     WMv.resize(total_length, 0);
     WMp.resize(total_length, 0);
-    // W.resize(n+1,1);
 
     // PK
     WIP.resize(total_length, 0);
@@ -72,6 +71,9 @@ W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_fre
     exp_params_rescale(energy);
     W.resize(n + 1, scale[1]);
     WI.resize(total_length, scale[1]);
+
+    /**     MEA       */
+    // probs.resize(total_length,0);
 }
 
 W_final_pf::~W_final_pf() {}
@@ -185,7 +187,6 @@ double W_final_pf::hfold_pf(sparse_tree &tree) {
 
     // Base pair probability
     structure = std::string(n, '.');
-    std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> samples;
     std::unordered_map<std::string, int> structures;
     for (cand_pos_t i = 0; i < num_samples; ++i) {
         std::string structure(n, '.');
@@ -202,6 +203,7 @@ double W_final_pf::hfold_pf(sparse_tree &tree) {
     if (PSplot) {
         create_dot_plot(seq, tree.tree, MFE_structure, samples, num_samples);
     }
+    MEA = compute_MEA(tree,1);
 
     return energy;
 }
@@ -388,9 +390,6 @@ void W_final_pf::compute_WI(cand_pos_t i, cand_pos_t j, sparse_tree &tree) {
         WI[ij] = expPUP_pen[1];
         return;
     }
-    // contributions += (get_energy(i,j)*expPPS_penalty);
-    // contributions += (get_energy_WMB(i,j)*expPSP_penalty*expPPS_penalty);
-    // If k-1<i, WI(i,k-1) = 1; if k-1==i, WI(i,k-1) = PUP_pen
     for (cand_pos_t k = i; k <= j - TURN - 1; ++k) {
         contributions += (get_energy_WI(i, k - 1) * get_energy(k, j) * expPPS_penalty);
         contributions += (get_energy_WI(i, k - 1) * get_energy_WMB(k, j) * expPSP_penalty * expPPS_penalty);
@@ -1735,29 +1734,20 @@ char W_final_pf::bpp_symbol(pf_t *P) {
 void W_final_pf::pairing_tendency(std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> &samples, sparse_tree &tree) {
 
     for (cand_pos_t j = 1; j <= n; j++) {
-        pf_t best_frequency = 0;
         pf_t P[5] = {1, 0, 0, 0, 0}; // unpaired, PK-free left, PK-free right, PK left, PK right
         for (cand_pos_t i = 1; i < j; i++) {
             bool weakly_closed_ij = tree.weakly_closed(i, j);
             std::pair<cand_pos_tu, cand_pos_tu> base_pair(i, j);
-            pf_t frequency_ij = (pf_t)samples[base_pair] / num_samples;
-            if(weakly_closed_ij) P[2] += frequency_ij; else P[4] += frequency_ij;
-            P[0] -= frequency_ij;
-            if (frequency_ij > best_frequency) {
-                best_frequency = frequency_ij;
-
-            }
+            pf_t probability_ij = (pf_t)samples[base_pair] / num_samples;
+            if(weakly_closed_ij) P[2] += probability_ij; else P[4] += probability_ij;
+            P[0] -= probability_ij;
         }
         for (cand_pos_t i = j + 1; i <= n; i++) {
             bool weakly_closed_ji = tree.weakly_closed(j, i);
             std::pair<cand_pos_tu, cand_pos_tu> base_pair(j, i);
-            pf_t frequency_ji = (pf_t)samples[base_pair] / num_samples;
-            if(weakly_closed_ji) P[1] += frequency_ji; else P[3] += frequency_ji;
-            P[0] -= frequency_ji;
-            if (frequency_ji > best_frequency) {
-                best_frequency = frequency_ji;
-
-            }
+            pf_t probability_ji = (pf_t)samples[base_pair] / num_samples;
+            if(weakly_closed_ji) P[1] += probability_ji; else P[3] += probability_ji;
+            P[0] -= probability_ji;
         }
         structure[j - 1] = bpp_symbol(P);
     }

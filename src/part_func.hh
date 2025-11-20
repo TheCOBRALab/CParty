@@ -29,6 +29,8 @@ class W_final_pf {
 
   public:
     std::string structure;
+    std::string MEA_structure;
+    pf_t MEA;
     int num_samples;
     pf_t frequency;
 
@@ -158,6 +160,11 @@ class W_final_pf {
     std::vector<pf_t> expcp_pen;
     std::vector<pf_t> expPUP_pen;
 
+    std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> samples;
+
+    /**           MEA            */
+    // std::vector<pf_t> probs;
+
     double to_Energy(pf_t energy, cand_pos_t length);
     void rescale_pk_globals();
 
@@ -258,6 +265,9 @@ class W_final_pf {
 
     void Sample_BE(cand_pos_t i, cand_pos_t j, cand_pos_t ip, cand_pos_t jp, std::string &structure,
                    std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> &samples, sparse_tree &tree);
+
+    /**                                                     MEA                                                             */
+    pf_t compute_MEA(sparse_tree &tree, double gamma);
 };
 
 #endif
