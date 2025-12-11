@@ -25,6 +25,7 @@ SET(SOURCE
   src/sparse_tree.cc
   src/dot_plot.cc
   src/mea.cc
+  src/centroid.cc
 )
 
 set(constraints_SOURCE

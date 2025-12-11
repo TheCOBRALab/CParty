@@ -31,6 +31,8 @@ class W_final_pf {
     std::string structure;
     std::string MEA_structure;
     pf_t MEA;
+    std::string centroid_structure;
+    pf_t distance;
     int num_samples;
     pf_t frequency;
 
@@ -268,6 +270,7 @@ class W_final_pf {
 
     /**                                                     MEA                                                             */
     pf_t compute_MEA(sparse_tree &tree, double gamma);
+    std::string compute_centroid(sparse_tree &tree, pf_t &dist);
 };
 
 #endif

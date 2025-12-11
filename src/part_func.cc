@@ -197,13 +197,16 @@ double W_final_pf::hfold_pf(sparse_tree &tree) {
 	// 	std::cout << key << ':' << val << std::endl;
     // }
     pairing_tendency(samples, tree);
-    frequency = (pf_t)structures[MFE_structure] / num_samples;
-    std::cout << "frequency of MFE structure in ensemble: " << frequency << std::endl;
+    this->frequency = (pf_t)structures[MFE_structure] / num_samples;
 
     if (PSplot) {
         create_dot_plot(seq, tree.tree, MFE_structure, samples, num_samples);
     }
     MEA = compute_MEA(tree,1);
+    pf_t dist = 0;
+    std::string centroid = compute_centroid(tree,dist);
+    this->centroid_structure = centroid;
+    this->distance = dist;
 
     return energy;
 }

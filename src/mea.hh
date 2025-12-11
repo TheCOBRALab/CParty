@@ -1,10 +1,13 @@
 #ifndef MEA_HEADER
 #define MEA_HEADER
 
-#include <base_types.hh>
+#include "base_types.hh"
 #include "part_func.hh"
 
 #include <vector>
+
+typedef std::pair<cand_pos_t, pf_t> cand_entry_t;
+typedef std::vector<cand_entry_t> cand_list_t;
 
 /**
  *  @brief  Data structure which holds all relevant information for MEA probability entries
@@ -20,6 +23,38 @@ struct elem_prob_s{
         p = prob;
     }
 };
+
+struct MEAdat {
+    std::vector<cand_pos_t> index;
+    std::vector<elem_prob_s> pp;
+    std::vector<elem_prob_s> plpk;
+    std::vector<pf_t> pu;
+    std::vector<pf_t> M;
+    std::vector<pf_t> BE;
+    std::vector<pf_t> WMBP;
+    double gamma;
+    std::vector<cand_list_t> CL;
+    std::vector<cand_list_t> CLPK;
+    std::string structure;
+    MEAdat(std::vector<cand_pos_t> &index,std::vector<elem_prob_s> &pp,std::vector<elem_prob_s> &plpk,std::vector<pf_t> &pu,std::vector<pf_t> &M,std::vector<pf_t> &BE,std::vector<pf_t> &WMBP,double &gamma,std::vector<cand_list_t> &CL,std::vector<cand_list_t> &CLPK, std::string &structure){
+        this->index = index;
+        this->pp = pp;
+        this->plpk = plpk;
+        this->pu = pu;
+        this->M = M;
+        this->BE = BE;
+        this->WMBP = WMBP;
+        this->gamma = gamma;
+        this->CL = CL;
+        this->CLPK = CLPK;
+        this->structure = structure;
+
+    }
+};
+
+struct Cand_comp {
+        bool operator()(const cand_entry_t &x, cand_pos_t y) const { return x.first > y; }
+} cand_comp;
 
 /*
  *  sort by sequence position:
@@ -38,7 +73,8 @@ void plist_from_probs(std::vector<elem_prob_s> &p,std::unordered_map<std::pair<c
 
 void prune_plist(std::vector<elem_prob_s> &p, std::vector<pf_t> &pu, std::vector<elem_prob_s> &pl, double gamma);
 
-// void mea_backtrack(MEAdat &bdat,sparse_tree &tree,cand_pos_t i, cand_pos_t j, int pair);
+void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, pf_t e);
+void mea_backtrack(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, int pair);
 
 
 #endif

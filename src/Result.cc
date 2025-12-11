@@ -2,7 +2,7 @@
 
 // constructor
 Result::Result(std::string sequence, std::string restricted, double restricted_energy, std::string final_structure, double final_energy,
-               std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA) {
+               std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA, std::string centroid_structure, pf_t distance, pf_t frequency) {
     this->sequence = sequence;
     this->restricted = restricted;
     this->restricted_energy = restricted_energy;
@@ -12,6 +12,9 @@ Result::Result(std::string sequence, std::string restricted, double restricted_e
     this->pf_energy = pf_energy;
     this->MEA_structure = MEA_structure;
     this->MEA = MEA;
+    this->centroid_structure = centroid_structure;
+    this->distance = distance;
+    this->frequency = frequency;
 }
 
 // destructor
@@ -26,3 +29,6 @@ std::string Result::get_final_structure_pf() { return this->final_structure_pf; 
 pf_t Result::get_pf_energy() { return this->pf_energy; }
 std::string Result::get_MEA_structure() { return this->MEA_structure; }
 pf_t Result::get_MEA() { return this->MEA; }
+std::string Result::get_centroid_structure() { return this->centroid_structure; }
+pf_t Result::get_distance() { return this->distance; }
+pf_t Result::get_frequency() { return this->frequency; }
