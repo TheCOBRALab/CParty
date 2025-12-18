@@ -147,11 +147,11 @@ int W_final_pf::compute_exterior_cases(cand_pos_t l, cand_pos_t j, sparse_tree &
     return (case1 << 2) | (case2 << 1) | case4;
 }
 
-inline double W_final_pf::to_Energy(pf_t energy, cand_pos_t length) {
+inline pf_t W_final_pf::to_Energy(pf_t energy, cand_pos_t length) {
     return ((-log(energy) - length * log(exp_params_->pf_scale)) * exp_params_->kT / 1000.0);
 }
 
-double W_final_pf::hfold_pf(sparse_tree &tree) {
+pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
 
     for (cand_pos_t i = n; i >= 1; --i) {
         for (cand_pos_t j = i; j <= n; ++j) {
@@ -193,22 +193,26 @@ double W_final_pf::hfold_pf(sparse_tree &tree) {
         Sample_W(1, n, structure, samples, tree);
         structures[structure]++;
     }
-    // for (auto const& [key, val] : structures){
-	// 	std::cout << key << ':' << val << std::endl;
-    // }
+
     pairing_tendency(samples, tree);
     this->frequency = (pf_t)structures[MFE_structure] / num_samples;
 
     if (PSplot) {
         create_dot_plot(seq, tree.tree, MFE_structure, samples, num_samples);
     }
-    MEA = compute_MEA(tree,1);
+
+    return energy;
+}
+pf_t W_final_pf::hfold_MEA(sparse_tree &tree){
+    pf_t MEA = compute_MEA(tree,1);
+    return MEA;
+}
+
+pf_t W_final_pf::hfold_centroid(sparse_tree &tree){
     pf_t dist = 0;
     std::string centroid = compute_centroid(tree,dist);
     this->centroid_structure = centroid;
-    this->distance = dist;
-
-    return energy;
+    return dist;
 }
 
 pf_t W_final_pf::exp_Extloop(cand_pos_t i, cand_pos_t j) {

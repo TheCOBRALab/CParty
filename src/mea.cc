@@ -350,7 +350,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                 }
             }
 
-            if ((pp[index2].i == i) && (pp[index2].j == j)) {
+            if (!pp.empty() && (pp[index2].i == i) && (pp[index2].j == j)) {
                 cand_pos_t ipjm1 = get_index(index,i+1,j-1);
                 EA = M[ipjm1];
                 EA += 2 * gamma * pp[index2].p;
@@ -360,7 +360,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                 }
                 ++index2;
             }
-            if ((plpk[index_PK].i == i) && (plpk[index_PK].j == j)) {
+            if (!plpk.empty() && (plpk[index_PK].i == i) && (plpk[index_PK].j == j)) {
                 cand_pos_t bp_ij = tree.bp(i,j);
                 cand_pos_t Bp_ij = tree.Bp(i,j);
                 cand_pos_t b_ij = tree.b(i,j);
@@ -672,8 +672,7 @@ void mea_backtrack(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, int
         bdat.structure[j - 1]  = ')';
         ++i;
         --j;
-    }
-    if (pair) {
+    } else if (pair) {
         /*
         * if pair == 1, insert pair 
         */

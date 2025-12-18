@@ -30,9 +30,7 @@ class W_final_pf {
   public:
     std::string structure;
     std::string MEA_structure;
-    pf_t MEA;
     std::string centroid_structure;
-    pf_t distance;
     int num_samples;
     pf_t frequency;
 
@@ -42,7 +40,11 @@ class W_final_pf {
     ~W_final_pf();
     // The destructor
 
-    double hfold_pf(sparse_tree &tree);
+    pf_t hfold_pf(sparse_tree &tree);
+
+    pf_t hfold_MEA(sparse_tree &tree);
+
+    pf_t hfold_centroid(sparse_tree &tree);
 
     vrna_exp_param_t *exp_params_;
 

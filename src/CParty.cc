@@ -95,10 +95,10 @@ std::string hfold_pf(std::string &seq, std::string &final_structure, double &ene
     W_final_pf min_fold(seq, final_structure, pk_free, dangles, min_en, num_samples, PSplot);
     energy = min_fold.hfold_pf(tree);
     std::string structure = min_fold.structure;
+    MEA = min_fold.hfold_MEA(tree);
     MEA_structure = min_fold.MEA_structure;
-    MEA = min_fold.MEA;
+    distance = min_fold.hfold_centroid(tree);
     centroid_structure = min_fold.centroid_structure;
-    distance = min_fold.distance;
     frequency = min_fold.frequency;
     return structure;
 }
@@ -126,7 +126,6 @@ int main(int argc, char *argv[]) {
 
     std::string restricted;
     args_info.input_structure_given ? restricted = input_struct : restricted = "";
-
     std::string fileI;
     args_info.input_file_given ? fileI = input_file : fileI = "";
 
@@ -154,14 +153,13 @@ int main(int argc, char *argv[]) {
             std::cout << "sequence is missing from file" << std::endl;
         }
     }
-    int n = seq.length();
+    cand_pos_t n = seq.length();
     std::transform(seq.begin(), seq.end(), seq.begin(), ::toupper);
     if (!args_info.noConv_given) seqtoRNA(seq);
     validateSequence(seq);
 
     if (restricted != "") validateStructure(seq, restricted);
-    if (pk_free)
-        if (restricted == "") restricted = std::string('.', n);
+    if (pk_free) if (restricted == "") restricted = std::string(n,'.');
 
     std::string file = args_info.paramFile_given ? parameter_file : "params/rna_DirksPierce09.par";
     if (exists(file)) {
@@ -189,7 +187,6 @@ int main(int argc, char *argv[]) {
     free(params);
     // Data structure for holding the output
     std::vector<Result> result_list;
-    // double min_energy;
     //  Iterate through all hotspots or the single given input structure
     cand_pos_t size = hotspot_list.size();
     for (cand_pos_t i = 0; i < size; ++i) {
@@ -201,10 +198,8 @@ int main(int argc, char *argv[]) {
         std::string MEA_structure;
         std::string centroid_structure;
         std::string structure = hotspot_list[i].get_structure();
-
         sparse_tree tree(structure, n);
         std::string final_structure = hfold(seq, structure, energy, tree, pk_free, pk_only, dangles);
-
         std::string final_structure_pf = hfold_pf(seq, final_structure, energy_pf,MEA_structure,MEA,centroid_structure,distance,frequency, tree, pk_free, dangles, energy, num_samples, PSplot);
 
         if (!args_info.input_structure_given && energy > 0.0) {
@@ -225,6 +220,7 @@ int main(int argc, char *argv[]) {
     if (number_of_suboptimal_structure != 1) {
         number_of_output = std::min((int)result_list.size(), number_of_suboptimal_structure);
     }
+    // std::cout << result_list[0].get_final_energy() << "\t" << result_list[0].get_pf_energy() << "\t" << result_list[0].get_distance() << "\t" << result_list[0].get_MEA() << std::endl;
     // output to file
     if (fileO != "") {
         std::ofstream out(fileO);
