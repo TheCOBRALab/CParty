@@ -90,7 +90,7 @@ std::string hfold(std::string seq, std::string res, double &energy, sparse_tree 
     return structure;
 }
 
-std::string hfold_pf(std::string &seq, std::string &final_structure, double &energy, std::string &MEA_structure, pf_t &MEA, std::string &centroid_structure,pf_t &distance, pf_t &frequency, sparse_tree &tree, bool pk_free, int dangles, double min_en,
+std::string hfold_pf(std::string &seq, std::string &final_structure, double &energy, std::string &MEA_structure, pf_t &MEA, std::string &centroid_structure,pf_t &distance, pf_t &frequency, pf_t &diversity, sparse_tree &tree, bool pk_free, int dangles, double min_en,
                      int num_samples, bool PSplot) {
     W_final_pf min_fold(seq, final_structure, pk_free, dangles, min_en, num_samples, PSplot);
     energy = min_fold.hfold_pf(tree);
@@ -99,6 +99,7 @@ std::string hfold_pf(std::string &seq, std::string &final_structure, double &ene
     MEA_structure = min_fold.MEA_structure;
     distance = min_fold.hfold_centroid(tree);
     centroid_structure = min_fold.centroid_structure;
+    diversity = min_fold.ensemble_diversity;
     frequency = min_fold.frequency;
     return structure;
 }
@@ -189,18 +190,14 @@ int main(int argc, char *argv[]) {
     std::vector<Result> result_list;
     //  Iterate through all hotspots or the single given input structure
     cand_pos_t size = hotspot_list.size();
+    
+    pf_t energy,energy_pf,MEA,distance,frequency,diversity;
+    std::string MEA_structure,centroid_structure;
     for (cand_pos_t i = 0; i < size; ++i) {
-        double energy;
-        pf_t energy_pf;
-        pf_t MEA;
-        pf_t distance;
-        pf_t frequency;
-        std::string MEA_structure;
-        std::string centroid_structure;
         std::string structure = hotspot_list[i].get_structure();
         sparse_tree tree(structure, n);
         std::string final_structure = hfold(seq, structure, energy, tree, pk_free, pk_only, dangles);
-        std::string final_structure_pf = hfold_pf(seq, final_structure, energy_pf,MEA_structure,MEA,centroid_structure,distance,frequency, tree, pk_free, dangles, energy, num_samples, PSplot);
+        std::string final_structure_pf = hfold_pf(seq, final_structure, energy_pf,MEA_structure,MEA,centroid_structure,distance,frequency, diversity, tree, pk_free, dangles, energy, num_samples, PSplot);
 
         if (!args_info.input_structure_given && energy > 0.0) {
             energy = 0.0;
@@ -208,7 +205,7 @@ int main(int argc, char *argv[]) {
             final_structure = std::string(n, '.');
         }
 
-        Result result(seq, hotspot_list[i].get_structure(), hotspot_list[i].get_energy(), final_structure, energy, final_structure_pf, energy_pf,MEA_structure,MEA,centroid_structure,distance,frequency);
+        Result result(seq, hotspot_list[i].get_structure(), hotspot_list[i].get_energy(), final_structure, energy, final_structure_pf, energy_pf,MEA_structure,MEA,centroid_structure,distance,frequency,diversity);
         result_list.push_back(result);
     }
 
@@ -220,19 +217,12 @@ int main(int argc, char *argv[]) {
     if (number_of_suboptimal_structure != 1) {
         number_of_output = std::min((int)result_list.size(), number_of_suboptimal_structure);
     }
-    // std::cout << result_list[0].get_final_energy() << "\t" << result_list[0].get_pf_energy() << "\t" << result_list[0].get_distance() << "\t" << result_list[0].get_MEA() << std::endl;
     // output to file
     if (fileO != "") {
         std::ofstream out(fileO);
         out << seq << std::endl;
-        out << "Restricted_" << 0 << ": " << result_list[0].get_restricted() << " (" << result_list[0].get_restricted_energy() << ")" << std::endl;
-        out << "Result_" << 0 << ":     " << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ")" << std::endl;
-        out << "Result_" << 0 << ":     " << result_list[0].get_final_structure_pf() << " (" << result_list[0].get_pf_energy() << ")" << std::endl;
-        out << "Result_" << 0 << ":     " << result_list[0].get_centroid_structure() << " (" << result_list[0].get_distance() << ")" << std::endl;
-        out << "Result_" << 0 << ":     " << result_list[0].get_MEA_structure() << " (" << result_list[0].get_MEA() << ")" << std::endl;
-        out << "frequency of MFE structure in ensemble: " << result_list[0].get_frequency() << std::endl;
-        for (int i = 1; i < number_of_output; i++) {
-            if (result_list[i].get_final_structure() == result_list[i - 1].get_final_structure()) continue;
+        for (cand_pos_t i = 0; i < number_of_output; i++) {
+            if (i>0 && result_list[i].get_final_structure() == result_list[i - 1].get_final_structure()) continue;
             out << "Restricted_" << i << ": " << result_list[i].get_restricted() << " (" << result_list[i].get_restricted_energy() << ")"
                 << std::endl;
             out << "Result_" << i << ":     " << result_list[i].get_final_structure() << " (" << result_list[i].get_final_energy() << ")"
@@ -242,7 +232,7 @@ int main(int argc, char *argv[]) {
             out << "Result_" << i << ":     " << result_list[0].get_centroid_structure() << " (" << result_list[i].get_distance() << ")" << std::endl;
             out << "Result_" << i << ":     " << result_list[i].get_MEA_structure() << " (" << result_list[i].get_MEA() << ")"
                 << std::endl;
-            out << "frequency of MFE structure in ensemble: " << result_list[i].get_frequency() << std::endl;
+            out << "frequency of MFE structure in ensemble: " << result_list[i].get_frequency() << "; ensemble diversity " << result_list[i].get_diversity() << std::endl;
         }
 
     } else {
@@ -256,21 +246,10 @@ int main(int argc, char *argv[]) {
             std::cout << result_list[0].get_final_structure_pf() << " (" << result_list[0].get_pf_energy() << ")" << std::endl;
             std::cout << result_list[0].get_centroid_structure() << " (" << result_list[0].get_distance() << ")" << std::endl;
             std::cout << result_list[0].get_MEA_structure() << " (" << result_list[0].get_MEA() << ")" << std::endl;
-            std::cout << "frequency of MFE structure in ensemble: " << result_list[0].get_frequency() << std::endl;
+            std::cout << "frequency of MFE structure in ensemble: " << result_list[0].get_frequency() << "; ensemble diversity " << result_list[0].get_diversity() << std::endl;
         } else {
-            std::cout << "Restricted_" << 0 << ": " << result_list[0].get_restricted() << " (" << result_list[0].get_restricted_energy() << ")"
-                      << std::endl;
-            std::cout << "Result_" << 0 << ":     " << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ")"
-                      << std::endl;
-            std::cout << "Result_" << 0 << ":     " << result_list[0].get_final_structure_pf() << " (" << result_list[0].get_pf_energy() << ")"
-                      << std::endl;
-            std::cout << "Result_" << 0 << ":     " << result_list[0].get_centroid_structure() << " (" << result_list[0].get_distance() << ")"
-                      << std::endl;
-            std::cout << "Result_" << 0 << ":     " << result_list[0].get_MEA_structure() << " (" << result_list[0].get_MEA() << ")"
-                      << std::endl;
-            std::cout << "frequency of MFE structure in ensemble: " << result_list[0].get_frequency() << std::endl;
-            for (int i = 1; i < number_of_output; i++) {
-                if (result_list[i].get_final_structure() == result_list[i - 1].get_final_structure()) continue;
+            for (cand_pos_t i = 0; i < number_of_output; i++) {
+                if (i>0 && result_list[i].get_final_structure() == result_list[i - 1].get_final_structure()) continue;
                 std::cout << "Restricted_" << i << ": " << result_list[i].get_restricted() << " (" << result_list[i].get_restricted_energy() << ")"
                           << std::endl;
                 std::cout << "Result_" << i << ":     " << result_list[i].get_final_structure() << " (" << result_list[i].get_final_energy() << ")"
@@ -281,7 +260,7 @@ int main(int argc, char *argv[]) {
                           << std::endl;
                 std::cout << "Result_" << i << ":     " << result_list[i].get_MEA_structure() << " (" << result_list[i].get_MEA() << ")"
                           << std::endl;
-                std::cout << "frequency of MFE structure in ensemble: " << result_list[i].get_frequency() << std::endl;
+                std::cout << "frequency of MFE structure in ensemble: " << result_list[i].get_frequency() << "; ensemble diversity " << result_list[i].get_diversity() << std::endl;
             }
         }
     }

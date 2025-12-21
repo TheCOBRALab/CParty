@@ -10,7 +10,7 @@ class Result {
   public:
     // constructor
     Result(std::string sequence, std::string restricted, double restricted_energy, std::string final_structure, double final_energy,
-           std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA, std::string centroid_structure, pf_t distance, pf_t frequency);
+           std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA, std::string centroid_structure, pf_t distance, pf_t frequency, pf_t diversity);
     // destructor
     ~Result();
 
@@ -27,6 +27,7 @@ class Result {
     std::string get_centroid_structure();
     pf_t get_distance();
     pf_t get_frequency();
+    pf_t get_diversity();
 
     struct Result_comp {
         bool operator()(Result &x, Result &y) const {
@@ -48,6 +49,7 @@ class Result {
     std::string centroid_structure;
     pf_t distance;
     pf_t frequency;
+    pf_t diversity;
 };
 
 #endif

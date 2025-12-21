@@ -33,6 +33,7 @@ class W_final_pf {
     std::string centroid_structure;
     int num_samples;
     pf_t frequency;
+    pf_t ensemble_diversity;
 
     W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_only, int dangle, double energy, int num_samples, bool PSplot);
     // constructor for the restricted mfe case
@@ -272,7 +273,7 @@ class W_final_pf {
 
     /**                                                     MEA                                                             */
     pf_t compute_MEA(sparse_tree &tree, double gamma);
-    std::string compute_centroid(sparse_tree &tree, pf_t &dist);
+    std::string compute_centroid(sparse_tree &tree, pf_t &dist, pf_t &diversity);
 };
 
 #endif

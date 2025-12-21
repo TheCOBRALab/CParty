@@ -210,8 +210,10 @@ pf_t W_final_pf::hfold_MEA(sparse_tree &tree){
 
 pf_t W_final_pf::hfold_centroid(sparse_tree &tree){
     pf_t dist = 0;
-    std::string centroid = compute_centroid(tree,dist);
+    pf_t diversity = 0;
+    std::string centroid = compute_centroid(tree,dist,diversity);
     this->centroid_structure = centroid;
+    this->ensemble_diversity = diversity;
     return dist;
 }
 
