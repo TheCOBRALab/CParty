@@ -182,7 +182,6 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
         }
         W[j] = contributions;
     }
-
     pf_t energy = to_Energy(W[n], n);
 
     // Base pair probability
@@ -196,6 +195,9 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
 
     pairing_tendency(samples, tree);
     this->frequency = (pf_t)structures[MFE_structure] / num_samples;
+    // for(auto kv : structures) {
+    // std::cout << kv.first << "\t" << kv.second << std::endl;  
+    // }      
 
     if (PSplot) {
         create_dot_plot(seq, tree.tree, MFE_structure, samples, num_samples);
@@ -765,9 +767,9 @@ void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::string &structu
     pf_t W_temp = 0;
     if (end > start) {
         for (; j > start; --j) {         // Moving through the unpaired bases in j
+            W_temp = W[j - 1] * scale[1];
             if (tree.tree[j].pair < 0) { // Checking if j can be unpaired
                 pf_t r = vrna_urn() * W[j];
-                W_temp = W[j - 1] * scale[1];
                 if (r > W_temp) { // Checking if our random sample means j is paired or unpaired
                     break;        // j is paired
                 }
@@ -776,10 +778,8 @@ void W_final_pf::Sample_W(cand_pos_t start, cand_pos_t end, std::string &structu
             }
         }
         if (j <= start + TURN) return; // No more base pairs can occur, but still successful
-
         pf_t r = vrna_urn() * (W[j] - W_temp);
-        std::vector<cand_pos_t> is =
-            boustrophedon(start, j - 1); // applies an alternating list so that the base pairing isn't biased to the right side
+        std::vector<cand_pos_t> is = boustrophedon(start, j - 1); // applies an alternating list so that the base pairing isn't biased to the right side
         cand_pos_t bous_n = is.size();
         pf_t qt = 0;
         cand_pos_t k = start;

@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#define debug 0
 
 int compute_exterior_cases(cand_pos_t l, cand_pos_t j, sparse_tree &tree) {
     // Case 1 -> l is not covered
@@ -266,8 +267,12 @@ void register_candidate(std::vector<cand_list_t> &CL, cand_pos_t const &i, cand_
 }
 
 cand_pos_t get_index(std::vector<cand_pos_t> &index, cand_pos_t i, cand_pos_t j) {
-        if(j<i) return 0; // index 0 will be 0
-        return index[i] + j - i;
+    if(j<i) return 0; // index 0 will be 0
+    return index[i] + j - i;
+}
+pf_t get_value(std::vector<pf_t> array, cand_pos_t ij, cand_pos_t i, cand_pos_t j){
+    if(j<i) return 0;
+    return array[ij];
 }
 
 pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
@@ -294,11 +299,13 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     for (cand_pos_t i = 2; i <= n; i++) {
         index[i] = index[i - 1] + (n + 1) - i + 1;
     }
+    std::vector<pf_t> W;
     std::vector<pf_t> M;
     std::vector<pf_t> BE;
     std::vector<pf_t> WMB;
     std::vector<pf_t> WMBP;
     std::vector<pf_t> BE_linear;
+    W.resize(total_length, 0);
     M.resize(total_length, 0);
     BE.resize(total_length,0);
     WMB.resize(total_length,0);
@@ -338,21 +345,21 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                 for (auto it = CL[j].begin(); CL[j].end() != it && it->first >= i; ++it) {
                     cand_pos_t k = it->first;
                     cand_pos_t ikm1 = get_index(index,i,k-1);
-                    EA = it->second + M[ikm1];
-                    M[ij] = std::max(M[j], EA);
+                    EA = it->second + get_value(M,ikm1,i,k-1);
+                    M[ij] = std::max(M[ij], EA);
                 }
 
                 for (auto it = CLPK[j].begin(); CLPK[j].end() != it && it->first >= i; ++it) {
                     cand_pos_t k = it->first;
                     cand_pos_t ikm1 = get_index(index,i,k-1);
-                    EA    = it->second + M[ikm1];
-                    M[ij] = std::max(M[j], EA);
+                    EA    = it->second + get_value(M,ikm1,i,k-1);
+                    M[ij] = std::max(M[ij], EA);
                 }
             }
 
             if (!pp.empty() && (pp[index2].i == i) && (pp[index2].j == j)) {
                 cand_pos_t ipjm1 = get_index(index,i+1,j-1);
-                EA = M[ipjm1];
+                EA = get_value(M,ipjm1,i+1,j-1);
                 EA += 2 * gamma * pp[index2].p;
                 if (M[ij] < EA) {
                     M[ij] = EA;
@@ -369,21 +376,21 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                 if(Bp_ij>=0 && B_ij>=0 && bp_ij<0){
                     cand_pos_t ip1Bpm1 = get_index(index,i+1,Bp_ij-1);
                     cand_pos_t Bp1jm1 = get_index(index,B_ij+1,j-1);
-                    EA = M[ip1Bpm1] + M[Bp1jm1];
+                    EA = get_value(M,ip1Bpm1,i+1,Bp_ij-1) + get_value(M,Bp1jm1,B_ij+1,j-1);
                 }
                 if(b_ij>=0 && bp_ij>=0 && Bp_ij<0){
                     cand_pos_t ip1bm1 = get_index(index,i+1,b_ij-1);
                     cand_pos_t bp1jm1 = get_index(index,bp_ij+1,j-1);
-                    EA = M[ip1bm1] + M[bp1jm1];
+                    EA = get_value(M,ip1bm1,i+1,b_ij-1) + get_value(M,bp1jm1,bp_ij+1,j-1);
                 }
                 if(Bp_ij>=0 && B_ij>=0 && bp_ij>0 && b_ij>0){
                     cand_pos_t ip1Bpm1 = get_index(index,i+1,Bp_ij-1);
                     cand_pos_t Bp1bm1 = get_index(index,B_ij+1,b_ij-1);
                     cand_pos_t bp1jm1 = get_index(index,bp_ij+1,j-1);
-                    EA = M[ip1Bpm1] + M[Bp1bm1] + M[bp1jm1];
+                    EA = get_value(M,ip1Bpm1,i+1,Bp_ij-1) + get_value(M,Bp1bm1,B_ij+1,b_ij-1) + get_value(M,bp1jm1,bp_ij+1,j-1);
                 }
                 cand_pos_t ip1jm1 = get_index(index,i+1,j-1);
-                EA = std::max(EA,M[ip1jm1]);
+                EA = std::max(EA,get_value(M,ip1jm1,i+1,j-1));
                 EA += 2 * gamma * plpk[index_PK].p;
                 if (M[ij] < EA) {
                     M[ij] = EA;
@@ -410,7 +417,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                                         cand_pos_t BE_index = get_index(index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair); 
                                         cand_pos_t WMBP_index = get_index(index,i,l-1);
                                         cand_pos_t VP_index = get_index(index,l,j); // VP can still be stored in M
-                                        tmp = std::max(tmp,BE[BE_index] + WMBP[WMBP_index] + M[VP_index]);
+                                        tmp = std::max(tmp,get_value(BE,BE_index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair) + get_value(WMBP,WMBP_index,i,l-1) + get_value(M,VP_index,l,j));
                                     }
                                 }
                             }
@@ -418,6 +425,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                     }
                 }
                 WMBP[ij] = std::max(WMBP[ij],tmp);
+                // 2
 
                 // 3
                 WMBP[ij] = std::max(WMBP[ij],M[ij]);
@@ -433,7 +441,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                                 cand_pos_t index_BE = get_index(index,i,bp_il);
                                 cand_pos_t index_WI = get_index(index,bp_il+1,l-1);
                                 cand_pos_t index_VP = get_index(index,l,j);
-                                tmp = std::max(tmp,BE[index_BE] + M[index_WI] + M[index_VP]);
+                                tmp = std::max(tmp,get_value(BE,index_BE,i,bp_il) + get_value(M,index_WI,bp_il+1,l-1) + get_value(M,index_VP,l,j));
                             }
                         }  
                     }
@@ -446,20 +454,21 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                     cand_pos_t bp_j = tree.tree[j].pair;
 		            for (auto it = plpk.begin(); plpk.end() != it && it->j >= bp_j; ++it){
                         cand_pos_t l = it->j;
-                        cand_pos_t Bp_lj = tree.Bp(l,j);
-                        cand_pos_t BE_index = get_index(index,bp_j,Bp_lj);
+                        cand_pos_t Bprime_lj = tree.Bp(l,j);
+                        cand_pos_t bprime_il = tree.bp(i,l);
+                        cand_pos_t BE_index = get_index(index,bp_j,bprime_il);
                         cand_pos_t WMBP_index = get_index(index,i,l);
-                        cand_pos_t M_index = get_index(index,l+1,Bp_lj-1);
-                        tmp = std::max(tmp,BE[BE_index] + WMBP[WMBP_index] + M[M_index]);
+                        cand_pos_t M_index = get_index(index,l+1,Bprime_lj-1);
+                        tmp = std::max(tmp,get_value(BE,BE_index,bp_j,bprime_il) + get_value(WMBP,WMBP_index,i,l) + get_value(M,M_index,l+1,Bprime_lj-1));
                     }
                 }
                 tmp = std::max(tmp,WMBP[ij]);
                 WMB[ij] = tmp;
                 
             }
-            if(M[ij] < WMB[ij]){
+            if(WMB[ij] > M[ij]){
                 M[ij] = std::max(M[ij],WMB[ij]);
-                register_candidate(CLPK,i,j,M[ij]);
+                register_candidate(CLPK,i,j,WMB[ij]);
             }
             
             cand_pos_t ip = tree.tree[i].pair; // i's pair ip should be right side so ip = )
@@ -483,8 +492,8 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                             cand_pos_t lpp1ipm1 = get_index(index,lp+1,ip-1);
                             cand_pos_t lj = get_index(index,l,j);
                             pf_t tmp = BE_linear[i] + BE[lj];
-                            if(!(i+1>l-1)) tmp += M[ip1lm1];
-                            if(!(lp+1>ip-1)) tmp += M[lpp1ipm1];
+                            if(!(i+1>l-1)) tmp += get_value(M,ip1lm1,i+1,l-1);
+                            if(!(lp+1>ip-1)) tmp += get_value(M,lpp1ipm1,lp+1,ip-1);
                             m2 = std::max(m2,tmp);
                         }
                     }
@@ -505,6 +514,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     return MEA;
 }
 void mea_backtrack_vp(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j){
+    if(debug) printf("In VP, i is %d and j is %d\n",i,j);
     bdat.structure[i-1] = '[';
     bdat.structure[j-1] = ']';
     cand_pos_t ij = get_index(bdat.index,i,j);
@@ -543,33 +553,26 @@ void mea_backtrack_vp(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j){
     }
 }
 void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, pf_t e){
+    if(debug) printf("In PK, i is %d and j is %d and e is %f\n",i,j,e);
     // WMB
     if (tree.tree[j].pair >= 0 && j > tree.tree[j].pair && tree.tree[j].pair > i){
         cand_pos_t bp_j = tree.tree[j].pair;
-        cand_pos_t Bp_lj_final = -1;
-        cand_pos_t l_final = -1;
-        cand_pos_t tmp = 0;
         for (auto it = bdat.plpk.begin(); bdat.plpk.end() != it && it->j >= bp_j; ++it){
             cand_pos_t l = it->j;
-            cand_pos_t Bp_lj = tree.Bp(l,j);
-            cand_pos_t BE_index = get_index(bdat.index,bp_j,Bp_lj);
+            cand_pos_t Bprime_lj = tree.Bp(l,j);
+            cand_pos_t bprime_il = tree.bp(i,l);
+            cand_pos_t BE_index = get_index(bdat.index,bp_j,bprime_il);
             cand_pos_t WMBP_index = get_index(bdat.index,i,l);
-            cand_pos_t M_index = get_index(bdat.index,l+1,Bp_lj-1);
-            pf_t en = bdat.BE[BE_index] + bdat.WMBP[WMBP_index] + bdat.M[M_index];
-            if(en>tmp){
-                tmp = en;
-                l_final = l;
-                Bp_lj_final = Bp_lj;
-            }
-        }
-        if(e == tmp){
-            cand_pos_t WMBP_index = get_index(bdat.index,i,l_final);
-            mea_backtrack(bdat,tree,l_final+1,Bp_lj_final-1,0);
-            mea_backtrack_pk(bdat,tree,i,l_final,bdat.WMBP[WMBP_index]);
-            for(cand_pos_t k = Bp_lj_final; k<=bp_j;++k){
-                if(tree.tree[k].pair>0){
-                    bdat.structure[k-1] = ')';
-                    bdat.structure[tree.tree[k].pair-1] = '(';
+            cand_pos_t M_index = get_index(bdat.index,l+1,Bprime_lj-1);
+            pf_t en = get_value(bdat.BE,BE_index,bp_j,bprime_il) + get_value(bdat.WMBP,WMBP_index,i,l) + get_value(bdat.M,M_index,l+1,Bprime_lj-1);
+            if(en==e){
+                mea_backtrack(bdat,tree,l+1,Bprime_lj-1,0);
+                mea_backtrack_pk(bdat,tree,i,l,bdat.WMBP[WMBP_index]);
+                for(cand_pos_t k = Bprime_lj; k<=j;++k){
+                    if(tree.tree[k].pair>0){
+                        bdat.structure[k-1] = ')';
+                        bdat.structure[tree.tree[k].pair-1] = '(';
+                    }
                 }
             }
         }
@@ -578,10 +581,6 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
     //WMBP 1
     if (tree.tree[j].pair < 0){
         cand_pos_t b_ij = tree.b(i,j);
-        pf_t tmp = 0;
-        cand_pos_t Bp_lj_final = -1;
-        cand_pos_t B_lj_final = -1;
-        cand_pos_t l_final = -1;
         for (auto it = bdat.plpk.begin(); bdat.plpk.end() != it; ++it){
             if(j == it->j){
                 cand_pos_t l = it->i;
@@ -595,27 +594,21 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
                             cand_pos_t BE_index = get_index(bdat.index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair);
                             cand_pos_t WMBP_index = get_index(bdat.index,i,l-1);
                             cand_pos_t VP_index = get_index(bdat.index,l,j); // VP can still be stored in M
-                            pf_t en = bdat.BE[BE_index] + bdat.WMBP[WMBP_index] + bdat.M[VP_index];
-                            if(en>tmp){
-                                tmp = en;
-                                l_final = l;
-                                B_lj_final = B_lj;
-                                Bp_lj_final = Bp_lj;
+                            pf_t en = get_value(bdat.BE,BE_index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair) + get_value(bdat.WMBP,WMBP_index,i,l-1) + get_value(bdat.M,VP_index,l,j);
+                            if(en==e){
+                                cand_pos_t WMBP_index = get_index(bdat.index,i,l-1);
+                                mea_backtrack_pk(bdat,tree,i,l,bdat.WMBP[WMBP_index]);
+                                mea_backtrack_vp(bdat,tree,l,j);
+
+                                for(cand_pos_t k = Bp_lj; k<=B_lj;++k){
+                                    if(tree.tree[k].pair>0){
+                                        bdat.structure[k-1] = ')';
+                                        bdat.structure[tree.tree[k].pair-1] = '(';
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
-        }
-        if(e==tmp){
-            cand_pos_t WMBP_index = get_index(bdat.index,i,l_final-1);
-            mea_backtrack_pk(bdat,tree,i,l_final,bdat.WMBP[WMBP_index]);
-            mea_backtrack_vp(bdat,tree,l_final,j);
-
-            for(cand_pos_t k = Bp_lj_final; k<=B_lj_final;++k){
-                if(tree.tree[k].pair>0){
-                    bdat.structure[k-1] = ')';
-                    bdat.structure[tree.tree[k].pair-1] = '(';
                 }
             }
         }
@@ -624,7 +617,7 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
 
     //WMBP 3
     cand_pos_t ij = get_index(bdat.index,i,j);
-    if(!tree.weakly_closed(i,j) && e == bdat.M[ij]){
+    if(tree.tree[i].pair<-1 && tree.tree[j].pair<-1 && !tree.weakly_closed(i,j) && e == bdat.M[ij]){
         mea_backtrack_vp(bdat,tree,i,j);
     }
     //WMBP 4
@@ -664,7 +657,7 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
 }
 
 void mea_backtrack(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, int pair){
-
+    if(debug) printf("In main, i is %d and j is %d and pair is %d\n",i,j,pair);
     int fail  = 1;
 
     if(tree.tree[i].pair == j){
