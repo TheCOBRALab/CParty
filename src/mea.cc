@@ -426,6 +426,16 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                 }
                 WMBP[ij] = std::max(WMBP[ij],tmp);
                 // 2
+                if (tree.tree[j].pair < j) {
+                    for (cand_pos_t l = i + 1; l < j; l++) {
+                        if (tree.tree[l].pair < 0 && tree.tree[l].parent->index > -1 && tree.tree[j].parent->index > -1
+                            && tree.tree[j].parent->index == tree.tree[l].parent->index) {
+                            cand_pos_t il = get_index(index,i,l);
+                            cand_pos_t lp1j = get_index(index,i,l);
+                            tmp = std::max(tmp,get_value(WMBP,il,i,l) + get_value(M,lp1j,l+1,j));
+                        }
+                    }
+                }
 
                 // 3
                 WMBP[ij] = std::max(WMBP[ij],M[ij]);
@@ -513,6 +523,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
 
     return MEA;
 }
+// Not doing internal loop
 void mea_backtrack_vp(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j){
     if(debug) printf("In VP, i is %d and j is %d\n",i,j);
     bdat.structure[i-1] = '[';
@@ -530,7 +541,7 @@ void mea_backtrack_vp(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j){
             EA = 2 * bdat.gamma * it->p;
         } 
     }
-    if (bdat.M[ij] <= bdat.M[ip1jm1] + EA + prec) {
+    if ((tree.tree[i+1].pair) < -1 && (tree.tree[j-1].pair) < -1 && get_value(bdat.M,ij,i,j) <= get_value(bdat.M,ip1jm1,i+1,j-1) + EA + prec) {
         mea_backtrack_vp(bdat,tree,i+1,j-1);
         return;
     }
@@ -574,6 +585,7 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
                         bdat.structure[tree.tree[k].pair-1] = '(';
                     }
                 }
+                return;
             }
         }
     }
@@ -597,7 +609,7 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
                             pf_t en = get_value(bdat.BE,BE_index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair) + get_value(bdat.WMBP,WMBP_index,i,l-1) + get_value(bdat.M,VP_index,l,j);
                             if(en==e){
                                 cand_pos_t WMBP_index = get_index(bdat.index,i,l-1);
-                                mea_backtrack_pk(bdat,tree,i,l,bdat.WMBP[WMBP_index]);
+                                mea_backtrack_pk(bdat,tree,i,l-1,get_value(bdat.WMBP,WMBP_index,i,l-1));
                                 mea_backtrack_vp(bdat,tree,l,j);
 
                                 for(cand_pos_t k = Bp_lj; k<=B_lj;++k){
@@ -606,6 +618,7 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
                                         bdat.structure[tree.tree[k].pair-1] = '(';
                                     }
                                 }
+                                return;
                             }
                         }
                     }
@@ -614,17 +627,31 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
         }
     }
     //WMBP 2
+    if (tree.tree[j].pair < j) {
+        for (cand_pos_t l = i + 1; l < j; l++) {
+            if (tree.tree[l].pair < 0 && tree.tree[l].parent->index > -1 && tree.tree[j].parent->index > -1
+                && tree.tree[j].parent->index == tree.tree[l].parent->index) {
+                cand_pos_t il = get_index(bdat.index,i,l);
+                cand_pos_t lp1j = get_index(bdat.index,i,l);
+                pf_t WMBP = get_value(bdat.WMBP,il,i,l);
+                pf_t en = WMBP + get_value(bdat.M,lp1j,l+1,j);
+                if(en==e){
+                    mea_backtrack_pk(bdat,tree,i,l,WMBP);
+                    mea_backtrack(bdat,tree,l+1,j,0);
+                    return;
+                }
+            }
+        }
+    }
 
     //WMBP 3
     cand_pos_t ij = get_index(bdat.index,i,j);
     if(tree.tree[i].pair<-1 && tree.tree[j].pair<-1 && !tree.weakly_closed(i,j) && e == bdat.M[ij]){
         mea_backtrack_vp(bdat,tree,i,j);
+        return;
     }
     //WMBP 4
     if(tree.tree[j].pair < 0 && tree.tree[i].pair >= 0){
-        pf_t tmp = 0;
-        cand_pos_t bp_il_final = -1;
-        cand_pos_t l_final = -1;
         for (auto it = bdat.plpk.begin(); bdat.plpk.end() != it; ++it){
             if(j == it->j){
                 cand_pos_t l = it->i;
@@ -634,24 +661,19 @@ void mea_backtrack_pk(MEAdat &bdat,sparse_tree &tree,cand_pos_t i,cand_pos_t j, 
                     cand_pos_t index_WI = get_index(bdat.index,bp_il+1,l-1);
                     cand_pos_t index_VP = get_index(bdat.index,l,j);
                     pf_t en = bdat.BE[index_BE] + bdat.M[index_WI] + bdat.M[index_VP];
-                    if(en>tmp){
-                        tmp = en;
-                        bp_il_final = bp_il;
-                        l_final = l;
+                    if(en==e){
+                        mea_backtrack(bdat,tree,bp_il+1,l-1,0);
+                        mea_backtrack_vp(bdat,tree,l,j);
+                        for(cand_pos_t k = i; k<=bp_il;++k){
+                            if(tree.tree[k].pair>0){
+                                bdat.structure[k-1] = '(';
+                                bdat.structure[tree.tree[k].pair-1] = ')';
+                            }
+                        }
+                        return;
                     }
                 }
             }  
-        }
-        if(e==tmp){
-            mea_backtrack(bdat,tree,bp_il_final+1,l_final-1,0);
-            mea_backtrack_vp(bdat,tree,l_final,j);
-            for(cand_pos_t k = i; k<=bp_il_final;++k){
-                if(tree.tree[k].pair>0){
-                    bdat.structure[k-1] = '(';
-                    bdat.structure[tree.tree[k].pair-1] = ')';
-                }
-            }
-            return;
         }
     }
 }
