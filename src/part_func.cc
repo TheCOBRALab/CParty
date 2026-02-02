@@ -186,7 +186,6 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
 
     // Base pair probability
     structure = std::string(n, '.');
-    std::unordered_map<std::string, int> structures;
     for (cand_pos_t i = 0; i < num_samples; ++i) {
         std::string structure(n, '.');
         Sample_W(1, n, structure, samples, tree);
@@ -194,10 +193,7 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
     }
 
     pairing_tendency(samples, tree);
-    this->frequency = (pf_t)structures[MFE_structure] / num_samples;
-    // for(auto kv : structures) {
-    // std::cout << kv.first << "\t" << kv.second << std::endl;  
-    // }      
+    this->frequency = (pf_t)structures[MFE_structure] / num_samples;     
 
     if (PSplot) {
         create_dot_plot(seq, tree.tree, MFE_structure, samples, num_samples);

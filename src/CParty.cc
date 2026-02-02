@@ -76,8 +76,8 @@ void validateSequence(std::string sequence) {
     }
     // return false if any characters other than GCAUT -- future implement check based on type
     for (char c : sequence) {
-        if (!(c == 'G' || c == 'C' || c == 'A' || c == 'U' || c == 'T')) {
-            std::cout << "Sequence contains character " << c << " that is not G,C,A,U, or T." << std::endl;
+        if (!(c == 'G' || c == 'C' || c == 'A' || c == 'U' || c == 'T' || c == 'N')) {
+            std::cout << "Sequence contains character " << c << " that is not N,G,C,A,U, or T." << std::endl;
             exit(EXIT_FAILURE);
         }
     }
