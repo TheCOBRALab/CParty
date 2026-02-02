@@ -58,9 +58,9 @@ void create_PS_data(std::ofstream &out, std::unordered_map<std::pair<cand_pos_t,
             if (samples[base_pair] > min_samples) {
                 pf_t prob = (pf_t)sqrt((pf_t)samples[base_pair] / num_samples);
                 if (tree[i].pair == j) {
-                    out << ".3 .7 .75 hsb " << i << " " << j << " " << prob << " ubox" << std::endl;
-                } else {
                     out << ".7 1 0 hsb " << i << " " << j << " " << prob << " ubox" << std::endl;
+                } else {
+                    out << "0 .7 .75 hsb " << i << " " << j << " " << prob << " ubox" << std::endl;
                 }
             }
         }
@@ -83,9 +83,9 @@ void create_PS_data(std::ofstream &out, std::unordered_map<std::pair<cand_pos_t,
                 j = pairs[pairs.size() - 1];
                 pairs.erase(pairs.end() - 1);
                 if (tree[i + 1].pair == j + 1) {
-                    out << ".3 .7 .75 hsb " << i + 1 << " " << j + 1 << " " << 1 << " lbox" << std::endl;
-                } else {
                     out << ".7 1 0 hsb " << i + 1 << " " << j + 1 << " " << 1 << " lbox" << std::endl;
+                } else {
+                    out << "0 .7 .75 hsb " << i + 1 << " " << j + 1 << " " << 1 << " lbox" << std::endl;
                 }
             }
         } else {
@@ -96,7 +96,7 @@ void create_PS_data(std::ofstream &out, std::unordered_map<std::pair<cand_pos_t,
             if (MFE_structure[i] == '[') {
                 j = PKpairs[PKpairs.size() - 1];
                 PKpairs.erase(PKpairs.end() - 1);
-                out << ".7 1 0 hsb " << i + 1 << " " << j + 1 << " " << 1 << " lbox" << std::endl;
+                out << "0 .7 .75 hsb " << i + 1 << " " << j + 1 << " " << 1 << " lbox" << std::endl;
             }
         } else {
             std::cout << "The given structure is not valid: left parentheses before right parentheses" << std::endl;
