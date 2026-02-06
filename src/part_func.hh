@@ -36,7 +36,7 @@ class W_final_pf {
     pf_t ensemble_diversity;
     std::unordered_map<std::string, int> structures;
 
-    W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_only, int dangle, double energy, int num_samples, bool PSplot);
+    W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free, bool pk_only, bool fatgraph, int dangle, double energy, int num_samples, bool PSplot);
     // constructor for the restricted mfe case
 
     ~W_final_pf();
@@ -137,6 +137,8 @@ class W_final_pf {
     std::string seq;
     std::string MFE_structure;
     bool pk_free;
+    bool pk_only;
+    bool fatgraph;
     bool PSplot;
     cand_pos_t n;
     std::vector<cand_pos_t> index;
@@ -275,8 +277,8 @@ class W_final_pf {
     /**                                                     MEA                                                             */
     pf_t compute_MEA(sparse_tree &tree, double gamma);
     std::string compute_centroid(sparse_tree &tree, pf_t &dist, pf_t &diversity);
-
     std::string compute_centroid_PK_only(sparse_tree &tree, pf_t &dist, pf_t &diversity);
+    std::string get_fatgraph(std::string structure);
 };
 
 #endif

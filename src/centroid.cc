@@ -118,3 +118,123 @@ std::string W_final_pf::compute_centroid_PK_only(sparse_tree &tree, pf_t &dist, 
     diversity*=2; // As there are two sides of a base pair
     return centroid;
 }
+/**
+ * If I have an unpaired matrix, I can try to walk through one and get all pairings.
+ * The second pass, I will do the same stack for pushing, but I will also have another for the fatgraph
+ * If either stack is empty and you get to and opening base (op), you push it into the string. If the distance between the two bases of the same
+ * type is filled with only unpaired relative to its parent, you skip adding it to the fatgraph. Popping from the stack does not affect this calculation
+ * because as long as the stack has something inside that an internal could form from, popping won't affect it.
+ * So when adding another op to the stack when the stack is not empty. I get the cp from the ptable and look at whether there is anything between i and ip and jp and j
+ * This should ensure that I am always
+*/
+void generate_pt(std::string &structure, std::vector<int> &fres, std::vector<int> &up, int n){
+   std::vector<int> paren;
+   std::vector<int> sb;
+   int count = 0;
+   for(int j = 0;j<n;++j){
+      if(structure[j] == '('){
+          paren.push_back(j);
+          count = 0;
+      }
+      else if(structure[j] == '['){
+          sb.push_back(j);
+          count = 0;
+      }
+      else if(structure[j] == ')'){
+          int i = paren.back();
+          fres[i] = j;
+          fres[j] = i;
+          paren.pop_back();
+          count = 0;
+      }
+      else if(structure[j] == ']'){
+          int i = sb.back();
+          fres[i] = j;
+          fres[j] = i;
+          sb.pop_back();
+          count = 0;
+      }
+      else{
+        ++count;
+        up[j] = count;
+      }
+   }
+   if(!paren.empty() && !sb.empty()){
+       std::cout << "Error: stacks aren't empty" << std::endl;
+       exit(0);
+   }
+}
+// i and j are the structured part
+bool empty_region(std::vector<int> &up, int i, int j){
+    if(up[j-1]>=j-i-1) return true;
+    return false;
+}
+
+void generate_fatgraph(std::string &structure, std::string &fatgraph,std::vector<int> &fres, std::vector<int> &up,int n){
+    std::vector<int> paren;
+    std::vector<int> sb;
+    std::string fatgraph_full = std::string(n,'.');
+   for(int j = 0;j<n;++j){
+      if(structure[j] == '('){
+          if(paren.empty()){
+            paren.push_back(j);
+            fatgraph_full[j] ='(';
+            fatgraph+='(';
+          } else {
+              int pparent = paren.back();
+              if (!empty_region(up,pparent,j) || !empty_region(up,fres[j],fres[pparent])){
+                paren.push_back(j);
+                fatgraph_full[j] ='(';
+                fatgraph+='(';
+              }else{
+                paren.push_back(j);
+              }
+          }
+      }
+      if(structure[j] == ')'){
+          int i = paren.back();
+          paren.pop_back();
+          if(fatgraph_full[i] == '('){
+              fatgraph_full[j] = ')';
+              fatgraph+=')';
+          }
+      }
+
+      if(structure[j] == '['){
+          if(sb.empty()){
+            sb.push_back(j);
+            fatgraph_full[j] ='[';
+            fatgraph+='[';
+          } else {
+              int pparent = sb.back();
+              if (!empty_region(up,pparent,j) || !empty_region(up,fres[j],fres[pparent])){
+                sb.push_back(j);
+                fatgraph_full[j] ='[';
+                fatgraph+='[';
+              }else{
+                sb.push_back(j);
+              }
+          }
+      }
+      if(structure[j] == ']'){
+          int i = sb.back();
+          sb.pop_back();
+          if(fatgraph_full[i] == '['){
+              fatgraph_full[j] = ']';
+              fatgraph+=']';
+          }
+      }
+   }
+}
+
+std::string W_final_pf::get_fatgraph(std::string structure){
+    int n = structure.length();
+    std::vector<int> fres;
+    std::vector<int> up;
+    fres.resize(n,-2);
+    up.resize(n,0);
+    generate_pt(structure,fres,up,n);
+    std::string fatgraph = "";
+    generate_fatgraph(structure,fatgraph,fres,up,n);
+    return fatgraph;
+}

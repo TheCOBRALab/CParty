@@ -27,12 +27,14 @@
  */
 #define RESCALE_BF(dG, dH, dT, kT) (exp(-TRUNC_MAYBE((double)RESCALE_dG((dG), (dH), (dT))) * 10. / kT))
 
-W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free, int dangle, double energy, int num_samples, bool PSplot)
+W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free,bool pk_only,bool fatgraph, int dangle, double energy, int num_samples, bool PSplot)
     : exp_params_(scale_pf_parameters()) {
     this->seq = seq;
     this->MFE_structure = MFE_structure;
     this->n = seq.length();
     this->pk_free = pk_free;
+    this->pk_only = pk_only;
+    this->fatgraph = fatgraph;
     this->PSplot = PSplot;
     this->num_samples = num_samples;
 
@@ -160,7 +162,7 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
             const pair_type ptype_closing = pair[S_[i]][S_[j]];
             const bool restricted = tree.tree[i].pair == -1 || tree.tree[j].pair == -1;
 
-            if (ptype_closing > 0 && evaluate && !restricted) compute_energy_restricted(i, j, tree);
+            if (ptype_closing > 0 && evaluate && !restricted & !pk_only) compute_energy_restricted(i, j, tree);
 
             if (!pk_free) compute_pk_energies(i, j, tree);
 
@@ -190,6 +192,16 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
         std::string structure(n, '.');
         Sample_W(1, n, structure, samples, tree);
         structures[structure]++;
+    }
+    std::unordered_map<std::string, int> fatgraphs;
+    if(fatgraph){
+        for(auto it: structures){
+            std::string fatgraph = get_fatgraph(it.first);
+            fatgraphs[fatgraph]+=it.second;
+        }
+        for(auto it: fatgraphs){
+            std::cout << it.first << "  " << it.second << std::endl;
+        }
     }
 
     pairing_tendency(samples, tree);

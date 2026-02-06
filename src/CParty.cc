@@ -90,9 +90,9 @@ std::string hfold(std::string seq, std::string res, double &energy, sparse_tree 
     return structure;
 }
 
-std::string hfold_pf(std::string &seq, std::string &final_structure, double &energy, std::string &MEA_structure, pf_t &MEA, std::string &centroid_structure,pf_t &distance, pf_t &frequency, pf_t &diversity, sparse_tree &tree, bool pk_free, int dangles, double min_en,
+std::string hfold_pf(std::string &seq, std::string &final_structure, double &energy, std::string &MEA_structure, pf_t &MEA, std::string &centroid_structure,pf_t &distance, pf_t &frequency, pf_t &diversity, sparse_tree &tree, bool pk_free,bool pk_only,bool fatgraph, int dangles, double min_en,
                      int num_samples, bool PSplot) {
-    W_final_pf min_fold(seq, final_structure, pk_free, dangles, min_en, num_samples, PSplot);
+    W_final_pf min_fold(seq, final_structure, pk_free,pk_only,fatgraph, dangles, min_en, num_samples, PSplot);
     energy = min_fold.hfold_pf(tree);
     std::string structure = min_fold.structure;
     MEA = min_fold.hfold_MEA(tree);
@@ -136,8 +136,8 @@ int main(int argc, char *argv[]) {
     int number_of_suboptimal_structure = args_info.subopt_given ? subopt : 1;
 
     bool pk_free = args_info.pk_free_given;
-
     bool pk_only = args_info.pk_only_given;
+    bool fatgraph = args_info.fatgraph_given;
 
     int dangles = args_info.dangles_given ? dangle_model : 2;
 
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
         std::string structure = hotspot_list[i].get_structure();
         sparse_tree tree(structure, n);
         std::string final_structure = hfold(seq, structure, energy, tree, pk_free, pk_only, dangles);
-        std::string final_structure_pf = hfold_pf(seq, final_structure, energy_pf,MEA_structure,MEA,centroid_structure,distance,frequency, diversity, tree, pk_free, dangles, energy, num_samples, PSplot);
+        std::string final_structure_pf = hfold_pf(seq, final_structure, energy_pf,MEA_structure,MEA,centroid_structure,distance,frequency, diversity, tree, pk_free,pk_only,fatgraph, dangles, energy, num_samples, PSplot);
 
         if (!args_info.input_structure_given && energy > 0.0) {
             energy = 0.0;
