@@ -27,14 +27,13 @@
  */
 #define RESCALE_BF(dG, dH, dT, kT) (exp(-TRUNC_MAYBE((double)RESCALE_dG((dG), (dH), (dT))) * 10. / kT))
 
-W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free,bool pk_only,bool fatgraph, int dangle, double energy, int num_samples, bool PSplot)
+W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free,bool pk_only, int dangle, double energy, int num_samples, bool PSplot)
     : exp_params_(scale_pf_parameters()) {
     this->seq = seq;
     this->MFE_structure = MFE_structure;
     this->n = seq.length();
     this->pk_free = pk_free;
     this->pk_only = pk_only;
-    this->fatgraph = fatgraph;
     this->PSplot = PSplot;
     this->num_samples = num_samples;
 
@@ -193,16 +192,6 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
         Sample_W(1, n, structure, samples, tree);
         structures[structure]++;
     }
-    std::unordered_map<std::string, int> fatgraphs;
-    if(fatgraph){
-        for(auto it: structures){
-            std::string fatgraph = get_fatgraph(it.first);
-            fatgraphs[fatgraph]+=it.second;
-        }
-        for(auto it: fatgraphs){
-            std::cout << it.first << "  " << it.second << std::endl;
-        }
-    }
 
     pairing_tendency(samples, tree);
     this->frequency = (pf_t)structures[MFE_structure] / num_samples;     
@@ -221,10 +210,29 @@ pf_t W_final_pf::hfold_MEA(sparse_tree &tree){
 pf_t W_final_pf::hfold_centroid(sparse_tree &tree){
     pf_t dist = 0;
     pf_t diversity = 0;
-    std::string centroid = compute_centroid(tree,dist,diversity);
+    std::string centroid = compute_centroid_PK_only(tree,dist,diversity);
     this->centroid_structure = centroid;
     this->ensemble_diversity = diversity;
     return dist;
+}
+
+pf_t W_final_pf::hfold_fatgraph(){
+    std::unordered_map<std::string, int> fatgraphs;
+    for(auto it: structures){
+        std::string fatgraph = get_fatgraph(it.first);
+        fatgraphs[fatgraph]+=it.second;
+    }
+    std::string best_fatgraph;
+    int fatgraph_frequency = 0;
+    for(auto it: fatgraphs){
+        if(it.second>fatgraph_frequency){
+            fatgraph_frequency = it.second;
+            best_fatgraph = it.first;
+        } 
+    }
+    this->best_fatgraph = best_fatgraph;
+    this->fatgraph_frequency = (pf_t) fatgraph_frequency/num_samples;
+    return this->fatgraph_frequency;
 }
 
 pf_t W_final_pf::exp_Extloop(cand_pos_t i, cand_pos_t j) {

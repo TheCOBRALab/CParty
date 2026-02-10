@@ -10,7 +10,7 @@ class Result {
   public:
     // constructor
     Result(std::string sequence, std::string restricted, double restricted_energy, std::string final_structure, double final_energy,
-           std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA, std::string centroid_structure, pf_t distance, pf_t frequency, pf_t diversity);
+           std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA, std::string centroid_structure, pf_t distance,std::string fatgraph,pf_t fatgraph_frquency, pf_t frequency, pf_t diversity);
     // destructor
     ~Result();
 
@@ -26,6 +26,8 @@ class Result {
     pf_t get_MEA();
     std::string get_centroid_structure();
     pf_t get_distance();
+    std::string get_fatgraph();
+    pf_t get_fatgraph_frequency();
     pf_t get_frequency();
     pf_t get_diversity();
 
@@ -48,6 +50,8 @@ class Result {
     pf_t MEA;
     std::string centroid_structure;
     pf_t distance;
+    std::string fatgraph;
+    pf_t fatgraph_frequency;
     pf_t frequency;
     pf_t diversity;
 };

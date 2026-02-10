@@ -42,7 +42,6 @@ const char *args_info_help[] = {
     "  -d  --dangles          Specify the dangle model to be used (base is 2)",
     "  -P, --paramFile        Read energy parameters from paramfile, instead of using the default parameter set.",
     "  -s, --samples          Give the number of samples foe the stochastic backtracking (default 1000)",
-    "  -f, --fatgraph         Give the fatgraphs relating to the samples with the relating number of times it occured",
     // "  -S  --shape            Give a path to a shape file corresponding to the sequence given",
     "      --noConv           Do not convert DNA into RNA. This will use the Matthews 2004 parameters for DNA",
     "      --noPS             Don't create a Postscript drawing of the base pair probabilities",
@@ -72,7 +71,6 @@ static void init_args_info(struct args_info *args_info) {
     args_info->dangles_help = args_info_help[8];
     args_info->paramFile_help = args_info_help[9];
     args_info->samples_help = args_info_help[10];
-    args_info->fatgraph_help = args_info_help[11];
     // args_info->shape_help = args_info_help[10] ;
     args_info->noConv_help = args_info_help[12];
     args_info->noPS_help = args_info_help[13];
@@ -124,7 +122,6 @@ static void clear_given(struct args_info *args_info) {
     args_info->dangles_given = 0;
     args_info->paramFile_given = 0;
     args_info->samples_given = 0;
-    args_info->fatgraph_given = 0;
     // args_info->shape_given = 0 ;
     args_info->noConv_given = 0;
     args_info->noPS_given = 0;
@@ -281,13 +278,12 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
                                                {"dangles", 0, NULL, 'd'},
                                                {"paramFile", required_argument, NULL, 'P'},
                                                {"samples", required_argument, NULL, 's'},
-                                               {"fatgraph", 0, NULL, 'f'},
                                                // { "shape",	required_argument, NULL, 'S' },
                                                {"noConv", 0, NULL, 0},
                                                {"noPS", 0, NULL, 0},
                                                {0, 0, 0, 0}};
 
-        c = getopt_long(argc, argv, "hVr:i:o:n:pkd:P:s:f", long_options, &option_index);
+        c = getopt_long(argc, argv, "hVr:i:o:n:pkd:P:s:", long_options, &option_index);
 
         if (c == -1) break; /* Exit from `while (1)' loop.  */
 
@@ -386,15 +382,6 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
         case 'k': /* Specify if pk-only.  */
 
             if (update_arg(0, 0, &(args_info->pk_only_given), &(local_args_info.pk_only_given), optarg, 0, 0, ARG_NO, 0, 0, "pk-only", 'k',
-                           additional_error)) {
-                goto failure;
-            }
-
-            break;
-        
-        case 'f': /* Specify if pk-only.  */
-
-            if (update_arg(0, 0, &(args_info->fatgraph_given), &(local_args_info.fatgraph_given), optarg, 0, 0, ARG_NO, 0, 0, "fatgraph", 'f',
                            additional_error)) {
                 goto failure;
             }
