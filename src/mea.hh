@@ -31,18 +31,20 @@ struct MEAdat {
     std::vector<pf_t> pu;
     std::vector<pf_t> M;
     std::vector<pf_t> BE;
+    std::vector<pf_t> WMB;
     std::vector<pf_t> WMBP;
     double gamma;
     std::vector<cand_list_t> CL;
     std::vector<cand_list_t> CLPK;
     std::string structure;
-    MEAdat(std::vector<cand_pos_t> &index,std::vector<elem_prob_s> &pp,std::vector<elem_prob_s> &plpk,std::vector<pf_t> &pu,std::vector<pf_t> &M,std::vector<pf_t> &BE,std::vector<pf_t> &WMBP,double &gamma,std::vector<cand_list_t> &CL,std::vector<cand_list_t> &CLPK, std::string &structure){
+    MEAdat(std::vector<cand_pos_t> &index,std::vector<elem_prob_s> &pp,std::vector<elem_prob_s> &plpk,std::vector<pf_t> &pu,std::vector<pf_t> &M,std::vector<pf_t> &BE,std::vector<pf_t> &WMB,std::vector<pf_t> &WMBP,double &gamma,std::vector<cand_list_t> &CL,std::vector<cand_list_t> &CLPK, std::string &structure){
         this->index = index;
         this->pp = pp;
         this->plpk = plpk;
         this->pu = pu;
         this->M = M;
         this->BE = BE;
+        this->WMB = WMB;
         this->WMBP = WMBP;
         this->gamma = gamma;
         this->CL = CL;

@@ -165,76 +165,57 @@ void generate_pt(std::string &structure, std::vector<int> &fres, std::vector<int
    }
 }
 // i and j are the structured part
-bool empty_region(std::vector<int> &up, int i, int j){
+static inline bool empty_region(const std::vector<int> &up, int i, int j){
     if(up[j-1]>=j-i-1) return true;
     return false;
 }
+// By having a function that deals with the fatgraph index on a per bracket type basis, it will be easier to expand this later if needed
+static inline void process_bracket(std::string &structure, std::string &fatgraph, std::string &fatgraph_full, cand_pos_t j,const std::vector<int> &fres,const  std::vector<int> &up,std::vector<int> &stack, char open, char close){
+    if(structure[j] == open){
+          if(stack.empty()){
+            stack.push_back(j);
+            fatgraph_full[j] = open;
+            fatgraph+=open;
+          } else {
+              cand_pos_t pparent = stack.back();
+              if (!empty_region(up,pparent,j) || !empty_region(up,fres[j],fres[pparent])){
+                stack.push_back(j);
+                fatgraph_full[j] = open;
+                fatgraph+=open;
+              }else{
+                stack.push_back(j);
+              }
+          }
+      }
+      if(structure[j] == close){
+          cand_pos_t i = stack.back();
+          stack.pop_back();
+          if(fatgraph_full[i] == open){
+              fatgraph_full[j] = close;
+              fatgraph+=close;
+          }
+      }
+}
 
-void generate_fatgraph(std::string &structure, std::string &fatgraph,std::vector<int> &fres, std::vector<int> &up,int n){
+std::string generate_fatgraph(std::string &structure,const std::vector<int> &fres,const  std::vector<int> &up, const cand_pos_t n){
     std::vector<int> paren;
     std::vector<int> sb;
+    paren.reserve(n/2);
     std::string fatgraph_full = std::string(n,'.');
-   for(int j = 0;j<n;++j){
-      if(structure[j] == '('){
-          if(paren.empty()){
-            paren.push_back(j);
-            fatgraph_full[j] ='(';
-            fatgraph+='(';
-          } else {
-              int pparent = paren.back();
-              if (!empty_region(up,pparent,j) || !empty_region(up,fres[j],fres[pparent])){
-                paren.push_back(j);
-                fatgraph_full[j] ='(';
-                fatgraph+='(';
-              }else{
-                paren.push_back(j);
-              }
-          }
-      }
-      if(structure[j] == ')'){
-          int i = paren.back();
-          paren.pop_back();
-          if(fatgraph_full[i] == '('){
-              fatgraph_full[j] = ')';
-              fatgraph+=')';
-          }
-      }
-
-      if(structure[j] == '['){
-          if(sb.empty()){
-            sb.push_back(j);
-            fatgraph_full[j] ='[';
-            fatgraph+='[';
-          } else {
-              int pparent = sb.back();
-              if (!empty_region(up,pparent,j) || !empty_region(up,fres[j],fres[pparent])){
-                sb.push_back(j);
-                fatgraph_full[j] ='[';
-                fatgraph+='[';
-              }else{
-                sb.push_back(j);
-              }
-          }
-      }
-      if(structure[j] == ']'){
-          int i = sb.back();
-          sb.pop_back();
-          if(fatgraph_full[i] == '['){
-              fatgraph_full[j] = ']';
-              fatgraph+=']';
-          }
-      }
+    std::string fatgraph = "";
+   for(cand_pos_t j = 0;j<n;++j){
+    process_bracket(structure,fatgraph,fatgraph_full,j,fres,up,paren,'(',')');
+    process_bracket(structure,fatgraph,fatgraph_full,j,fres,up,sb,'[',']');
    }
+   return fatgraph;
 }
 
 std::string W_final_pf::get_fatgraph(std::string structure){
-    int n = structure.length();
-    std::vector<int> fres;
-    std::vector<int> up;
-    fres.resize(n,-2);
-    up.resize(n,0);
+    const cand_pos_t n = structure.length();
+    std::vector<int> fres(n,-2);
+    std::vector<int> up(n,0);
     generate_pt(structure,fres,up,n);
-    std::string fatgraph = "";
-    generate_fatgraph(structure,fatgraph,fres,up,n);
+
+    std::string fatgraph = generate_fatgraph(structure,fres,up,n);
     return fatgraph;
 }

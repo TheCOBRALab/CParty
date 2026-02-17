@@ -274,6 +274,133 @@ pf_t get_value(std::vector<pf_t> array, cand_pos_t ij, cand_pos_t i, cand_pos_t 
     if(j<i) return 0;
     return array[ij];
 }
+void compute_VP_MEA(cand_pos_t i, cand_pos_t j,std::vector<pf_t> &M,std::vector <elem_prob_s> &plpk,std::vector<cand_pos_t> &index,cand_pos_t &index_PK, sparse_tree &tree, double gamma){
+    cand_pos_t ij = index[i]+j-i;
+    if (!plpk.empty() && (plpk[index_PK].i == i) && (plpk[index_PK].j == j)) {
+        cand_pos_t bp_ij = tree.bp(i,j);
+        cand_pos_t Bp_ij = tree.Bp(i,j);
+        cand_pos_t b_ij = tree.b(i,j);
+        cand_pos_t B_ij = tree.B(i,j);
+        pf_t EA = 0;
+        if(Bp_ij>=0 && B_ij>=0 && bp_ij<0){
+            cand_pos_t ip1Bpm1 = get_index(index,i+1,Bp_ij-1);
+            cand_pos_t Bp1jm1 = get_index(index,B_ij+1,j-1);
+            EA = get_value(M,ip1Bpm1,i+1,Bp_ij-1) + get_value(M,Bp1jm1,B_ij+1,j-1);
+        }
+        if(b_ij>=0 && bp_ij>=0 && Bp_ij<0){
+            cand_pos_t ip1bm1 = get_index(index,i+1,b_ij-1);
+            cand_pos_t bp1jm1 = get_index(index,bp_ij+1,j-1);
+            EA = get_value(M,ip1bm1,i+1,b_ij-1) + get_value(M,bp1jm1,bp_ij+1,j-1);
+        }
+        if(Bp_ij>=0 && B_ij>=0 && bp_ij>0 && b_ij>0){
+            cand_pos_t ip1Bpm1 = get_index(index,i+1,Bp_ij-1);
+            cand_pos_t Bp1bm1 = get_index(index,B_ij+1,b_ij-1);
+            cand_pos_t bp1jm1 = get_index(index,bp_ij+1,j-1);
+            EA = get_value(M,ip1Bpm1,i+1,Bp_ij-1) + get_value(M,Bp1bm1,B_ij+1,b_ij-1) + get_value(M,bp1jm1,bp_ij+1,j-1);
+        }
+        cand_pos_t ip1jm1 = get_index(index,i+1,j-1);
+        EA = std::max(EA,get_value(M,ip1jm1,i+1,j-1));
+        EA += 2 * gamma * plpk[index_PK].p;
+        if (M[ij] < EA) {
+            M[ij] = EA;
+        }
+        ++index_PK;
+    }
+}
+void compute_WMBP_MEA(cand_pos_t i, cand_pos_t j,std::vector<pf_t> &BE,std::vector<pf_t> &WMBP,std::vector<pf_t> &M,std::vector <elem_prob_s> &plpk,std::vector<cand_pos_t> &index, sparse_tree &tree, cand_pos_t n){
+    // WMBP
+    pf_t tmp = 0;
+    cand_pos_t ij = index[i]+j-i;
+    // 1
+    if (tree.tree[j].pair < 0){
+        cand_pos_t b_ij = tree.b(i,j);
+        for (auto it = plpk.begin(); plpk.end() != it; ++it){
+            if(j == it->j){
+                cand_pos_t l = it->i;
+                cand_pos_t bp_il = tree.bp(i,l);
+                cand_pos_t Bp_lj = tree.Bp(l,j);
+                int ext_case = compute_exterior_cases(l,j,tree);
+                if((b_ij > 0 && l < b_ij) || (b_ij<0 && ext_case == 0)){
+                    if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){
+                        cand_pos_t B_lj = tree.B(l,j);
+                        if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
+                            cand_pos_t BE_index = get_index(index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair); 
+                            cand_pos_t WMBP_index = get_index(index,i,l-1);
+                            cand_pos_t VP_index = get_index(index,l,j); // VP can still be stored in M
+                            tmp = std::max(tmp,get_value(BE,BE_index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair) + get_value(WMBP,WMBP_index,i,l-1) + get_value(M,VP_index,l,j));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    WMBP[ij] = std::max(WMBP[ij],tmp);
+    // 2
+    if (tree.tree[j].pair < j) {
+        for (cand_pos_t l = i + 1; l < j; l++) {
+            if (tree.tree[l].pair < 0 && tree.tree[l].parent->index > -1 && tree.tree[j].parent->index > -1
+                && tree.tree[j].parent->index == tree.tree[l].parent->index) {
+                cand_pos_t il = get_index(index,i,l);
+                cand_pos_t lp1j = get_index(index,i,l);
+                tmp = std::max(tmp,get_value(WMBP,il,i,l) + get_value(M,lp1j,l+1,j));
+            }
+        }
+    }
+
+    // 3
+    WMBP[ij] = std::max(WMBP[ij],M[ij]);
+
+    // 4
+    tmp = 0;
+    if(tree.tree[j].pair < 0 && tree.tree[i].pair >= 0){
+        for (auto it = plpk.begin(); plpk.end() != it; ++it){
+            if(j == it->j){
+                cand_pos_t l = it->i;
+                cand_pos_t bp_il = tree.bp(i,l);
+                if(bp_il >= 0 && bp_il < n && l+TURN <= j){
+                    cand_pos_t index_BE = get_index(index,i,bp_il);
+                    cand_pos_t index_WI = get_index(index,bp_il+1,l-1);
+                    cand_pos_t index_VP = get_index(index,l,j);
+                    tmp = std::max(tmp,get_value(BE,index_BE,i,bp_il) + get_value(M,index_WI,bp_il+1,l-1) + get_value(M,index_VP,l,j));
+                }
+            }  
+        }
+    }
+    WMBP[ij] = std::max(WMBP[ij],tmp);
+}
+
+void compute_BE_MEA(cand_pos_t i, cand_pos_t j,std::vector<pf_t> &BE,std::vector<pf_t> &BE_linear,std::vector<pf_t> &M,std::vector<cand_pos_t> &index, sparse_tree &tree, cand_pos_t n){
+    cand_pos_t ip = tree.tree[i].pair; // i's pair ip should be right side so ip = )
+    cand_pos_t jp = tree.tree[j].pair; // j's pair jp should be right side so jp = )
+    cand_pos_t ij = index[i]+j-i;
+    //    ( (.     (.     ).  ).  )
+    // .  i l.     j.     jp. lp. ip
+    if(i>=1 && i<j && jp<ip && j<jp && i<ip && j<=n){
+        //  cand_pos_t ijm1 = index[i] + j - i;
+        if(i == j && ip == jp){
+            BE[ij] = BE_linear[i];
+        }
+        else if(i+1 == j && ip-1 == jp){
+            cand_pos_t ip1jm1 = index[i+1] + j-1 - (i+1);
+            BE[ij] = BE[ip1jm1] + BE_linear[i];
+        } else{
+            pf_t m2 = 0;
+            for (cand_pos_t l = i+1; l<= j ; l++){
+                if (tree.tree[l].pair >= -1 && jp <= tree.tree[l].pair && tree.tree[l].pair < ip){
+                    cand_pos_t lp = tree.tree[l].pair;
+                    cand_pos_t ip1lm1 = get_index(index,i+1,l-1);
+                    cand_pos_t lpp1ipm1 = get_index(index,lp+1,ip-1);
+                    cand_pos_t lj = get_index(index,l,j);
+                    pf_t tmp = BE_linear[i] + BE[lj];
+                    if(!(i+1>l-1)) tmp += get_value(M,ip1lm1,i+1,l-1);
+                    if(!(lp+1>ip-1)) tmp += get_value(M,lpp1ipm1,lp+1,ip-1);
+                    m2 = std::max(m2,tmp);
+                }
+            }
+            BE[ij] = m2;
+        }
+    }
+}
 
 pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     std::string structure = std::string(n, '.');
@@ -281,8 +408,7 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     std::vector <elem_prob_s> p; // All elements with probabilities for pairs > cutoff
     std::vector <elem_prob_s> plpk; // probability paired list PK
     std::vector <elem_prob_s> pp; // probability paired list
-    std::vector<pf_t> pu; // Probabilitiy unpaired list
-    pu.resize(n+1,1.0);
+    std::vector<pf_t> pu(n+1,1.0); // Probabilitiy unpaired list
     
     // Fill p with all pairs/probs > cutoff
     plist_from_probs(p,samples,num_samples,n,1e-4 / (1 + gamma));
@@ -299,43 +425,34 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     for (cand_pos_t i = 2; i <= n; i++) {
         index[i] = index[i - 1] + (n + 1) - i + 1;
     }
-    std::vector<pf_t> W;
-    std::vector<pf_t> M;
-    std::vector<pf_t> BE;
-    std::vector<pf_t> WMB;
-    std::vector<pf_t> WMBP;
-    std::vector<pf_t> BE_linear;
-    W.resize(total_length, 0);
-    M.resize(total_length, 0);
-    BE.resize(total_length,0);
-    WMB.resize(total_length,0);
-    WMBP.resize(total_length,0);
-    BE_linear.resize(n+1,0);
-
-    // BlossomMatching BM(n+1,pl);
-    // MEA = BM.max_weight_matching(pu,structure,tree);
+    std::vector<pf_t> W(total_length,0);
+    std::vector<pf_t> M(total_length,0);
+    std::vector<pf_t> BE(total_length,0);
+    std::vector<pf_t> WMB(total_length,0);
+    std::vector<pf_t> WMBP(total_length,0);
+    std::vector<pf_t> BE_linear(n+1,0);
 
     // sort by i then by j
     std::sort(pp.begin(),pp.end(),comp_plist);
     std::sort(plpk.begin(),plpk.end(),comp_plist);
     
-    std::vector<cand_list_t> CL;
-    CL.resize(n + 1);
-    std::vector<cand_list_t> CLPK;
-    CLPK.resize(n + 1);
-    cand_pos_t index2 = 0;
+    std::vector<cand_list_t> CL(n+1);
+    std::vector<cand_list_t> CLPK(n+1);
+    cand_pos_t index_M = 0;
     cand_pos_t index_PK = 0;
     cand_pos_t index_BE = 0;
     pf_t EA = 0.0;
     for(cand_pos_t i = n; i>0;--i){
         cand_pos_t ii = get_index(index,i,i);
         M[ii] = pu[i];
-        if (pp[index_BE].i == i){
+        while((pp[index_BE].i == i && pp[index_BE].j>i) && !(tree.tree[i].pair>i)) ++index_BE;
+        
+        if(tree.tree[i].pair > i){
             BE_linear[i] = 2 * gamma * pp[index_BE].p;
             BE[ii] = 2 * gamma * pp[index_BE].p;
-            index_BE++;
+            ++index_BE; 
         }
-        if ((pp[index2].i == i) && (pp[index2].i > pp[index2].j)) ++index2;
+        if ((pp[index_M].i == i) && (pp[index_M].i > pp[index_M].j)) ++index_M;
         for(cand_pos_t j = i;j<=n;++j){
             cand_pos_t ij = get_index(index,i,j);
             cand_pos_t ijm1 = get_index(index,i,j-1);
@@ -357,109 +474,22 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                 }
             }
 
-            if (!pp.empty() && (pp[index2].i == i) && (pp[index2].j == j)) {
+            if (!pp.empty() && (pp[index_M].i == i) && (pp[index_M].j == j)) {
                 cand_pos_t ipjm1 = get_index(index,i+1,j-1);
                 EA = get_value(M,ipjm1,i+1,j-1);
-                EA += 2 * gamma * pp[index2].p;
+                EA += 2 * gamma * pp[index_M].p;
                 if (M[ij] < EA) {
                     M[ij] = EA;
                     register_candidate(CL,i,j,EA);
                 }
-                ++index2;
+                ++index_M;
             }
-            if (!plpk.empty() && (plpk[index_PK].i == i) && (plpk[index_PK].j == j)) {
-                cand_pos_t bp_ij = tree.bp(i,j);
-                cand_pos_t Bp_ij = tree.Bp(i,j);
-                cand_pos_t b_ij = tree.b(i,j);
-                cand_pos_t B_ij = tree.B(i,j);
-                EA = 0;
-                if(Bp_ij>=0 && B_ij>=0 && bp_ij<0){
-                    cand_pos_t ip1Bpm1 = get_index(index,i+1,Bp_ij-1);
-                    cand_pos_t Bp1jm1 = get_index(index,B_ij+1,j-1);
-                    EA = get_value(M,ip1Bpm1,i+1,Bp_ij-1) + get_value(M,Bp1jm1,B_ij+1,j-1);
-                }
-                if(b_ij>=0 && bp_ij>=0 && Bp_ij<0){
-                    cand_pos_t ip1bm1 = get_index(index,i+1,b_ij-1);
-                    cand_pos_t bp1jm1 = get_index(index,bp_ij+1,j-1);
-                    EA = get_value(M,ip1bm1,i+1,b_ij-1) + get_value(M,bp1jm1,bp_ij+1,j-1);
-                }
-                if(Bp_ij>=0 && B_ij>=0 && bp_ij>0 && b_ij>0){
-                    cand_pos_t ip1Bpm1 = get_index(index,i+1,Bp_ij-1);
-                    cand_pos_t Bp1bm1 = get_index(index,B_ij+1,b_ij-1);
-                    cand_pos_t bp1jm1 = get_index(index,bp_ij+1,j-1);
-                    EA = get_value(M,ip1Bpm1,i+1,Bp_ij-1) + get_value(M,Bp1bm1,B_ij+1,b_ij-1) + get_value(M,bp1jm1,bp_ij+1,j-1);
-                }
-                cand_pos_t ip1jm1 = get_index(index,i+1,j-1);
-                EA = std::max(EA,get_value(M,ip1jm1,i+1,j-1));
-                EA += 2 * gamma * plpk[index_PK].p;
-                if (M[ij] < EA) {
-                    M[ij] = EA;
-                }
-                ++index_PK;
-            }
+            compute_VP_MEA(i,j,M,plpk,index,index_PK,tree,gamma);
 
             if (!((j-i-1) <= TURN || (tree.tree[i].pair >= -1 && tree.tree[i].pair > j) || (tree.tree[j].pair >= -1 && tree.tree[j].pair < i) || (tree.tree[i].pair >= -1 && tree.tree[i].pair < i ) || (tree.tree[j].pair >= -1 && j < tree.tree[j].pair))){
-                // WMBP
-                pf_t tmp = 0;
-                // 1
-                if (tree.tree[j].pair < 0){
-                    cand_pos_t b_ij = tree.b(i,j);
-                    for (auto it = plpk.begin(); plpk.end() != it; ++it){
-                        if(j == it->j){
-                            cand_pos_t l = it->i;
-                            cand_pos_t bp_il = tree.bp(i,l);
-			                cand_pos_t Bp_lj = tree.Bp(l,j);
-                            int ext_case = compute_exterior_cases(l,j,tree);
-                            if((b_ij > 0 && l < b_ij) || (b_ij<0 && ext_case == 0)){
-                                if (bp_il >= 0 && l>bp_il && Bp_lj > 0 && l<Bp_lj){
-                                    cand_pos_t B_lj = tree.B(l,j);
-                                    if (i <= tree.tree[l].parent->index && tree.tree[l].parent->index < j && l+TURN <=j){
-                                        cand_pos_t BE_index = get_index(index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair); 
-                                        cand_pos_t WMBP_index = get_index(index,i,l-1);
-                                        cand_pos_t VP_index = get_index(index,l,j); // VP can still be stored in M
-                                        tmp = std::max(tmp,get_value(BE,BE_index,tree.tree[B_lj].pair,tree.tree[Bp_lj].pair) + get_value(WMBP,WMBP_index,i,l-1) + get_value(M,VP_index,l,j));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                WMBP[ij] = std::max(WMBP[ij],tmp);
-                // 2
-                if (tree.tree[j].pair < j) {
-                    for (cand_pos_t l = i + 1; l < j; l++) {
-                        if (tree.tree[l].pair < 0 && tree.tree[l].parent->index > -1 && tree.tree[j].parent->index > -1
-                            && tree.tree[j].parent->index == tree.tree[l].parent->index) {
-                            cand_pos_t il = get_index(index,i,l);
-                            cand_pos_t lp1j = get_index(index,i,l);
-                            tmp = std::max(tmp,get_value(WMBP,il,i,l) + get_value(M,lp1j,l+1,j));
-                        }
-                    }
-                }
-
-                // 3
-                WMBP[ij] = std::max(WMBP[ij],M[ij]);
-
-                // 4
-                tmp = 0;
-                if(tree.tree[j].pair < 0 && tree.tree[i].pair >= 0){
-                    for (auto it = plpk.begin(); plpk.end() != it; ++it){
-                        if(j == it->j){
-                            cand_pos_t l = it->i;
-                            cand_pos_t bp_il = tree.bp(i,l);
-                            if(bp_il >= 0 && bp_il < n && l+TURN <= j){
-                                cand_pos_t index_BE = get_index(index,i,bp_il);
-                                cand_pos_t index_WI = get_index(index,bp_il+1,l-1);
-                                cand_pos_t index_VP = get_index(index,l,j);
-                                tmp = std::max(tmp,get_value(BE,index_BE,i,bp_il) + get_value(M,index_WI,bp_il+1,l-1) + get_value(M,index_VP,l,j));
-                            }
-                        }  
-                    }
-                }
-                WMBP[ij] = std::max(WMBP[ij],tmp);
-
+                compute_WMBP_MEA(i,j,BE,WMBP,M,plpk,index,tree,n);
                 // WMB
-                tmp = 0;
+                pf_t tmp = 0;
                 if (tree.tree[j].pair >= 0 && j > tree.tree[j].pair && tree.tree[j].pair > i){
                     cand_pos_t bp_j = tree.tree[j].pair;
 		            for (auto it = plpk.begin(); plpk.end() != it && it->j >= bp_j; ++it){
@@ -480,42 +510,13 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
                 M[ij] = std::max(M[ij],WMB[ij]);
                 register_candidate(CLPK,i,j,WMB[ij]);
             }
-            
-            cand_pos_t ip = tree.tree[i].pair; // i's pair ip should be right side so ip = )
-            cand_pos_t jp = tree.tree[j].pair; // j's pair jp should be right side so jp = )
-            //    ( (.     (.     ).  ).  )
-            // .  i l.     j.     jp. lp. ip
-            if(i>=1 && i<j && jp<ip && j<jp && i<ip && j<=n){
-                //  cand_pos_t ijm1 = index[i] + j - i;
-                if(i == j && ip == jp){
-                    BE[ij] = BE_linear[i];
-                }
-                else if(i+1 == j && ip-1 == jp){
-                    cand_pos_t ip1jm1 = index[i+1] + j-1 - (i+1);
-                    BE[ij] = BE[ip1jm1] + BE_linear[i];
-                } else{
-                    pf_t m2 = 0;
-                    for (cand_pos_t l = i+1; l<= j ; l++){
-                        if (tree.tree[l].pair >= -1 && jp <= tree.tree[l].pair && tree.tree[l].pair < ip){
-                            cand_pos_t lp = tree.tree[l].pair;
-                            cand_pos_t ip1lm1 = get_index(index,i+1,l-1);
-                            cand_pos_t lpp1ipm1 = get_index(index,lp+1,ip-1);
-                            cand_pos_t lj = get_index(index,l,j);
-                            pf_t tmp = BE_linear[i] + BE[lj];
-                            if(!(i+1>l-1)) tmp += get_value(M,ip1lm1,i+1,l-1);
-                            if(!(lp+1>ip-1)) tmp += get_value(M,lpp1ipm1,lp+1,ip-1);
-                            m2 = std::max(m2,tmp);
-                        }
-                    }
-                    BE[ij] = m2;
-                }
-            }
+            compute_BE_MEA(i,j,BE,BE_linear,M,index,tree,n);
         }
     }
     cand_pos_t index_1n = get_index(index,1,n);
     MEA = M[index_1n];
 
-    MEAdat bdat(index,pp,plpk,pu,M,BE,WMBP,gamma,CL,CLPK,structure);
+    MEAdat bdat(index,pp,plpk,pu,M,BE,WMB,WMBP,gamma,CL,CLPK,structure);
     mea_backtrack(bdat,tree,1,n,0);
 
 
