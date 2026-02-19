@@ -73,12 +73,28 @@ void prune_plist(std::vector<elem_prob_s> &p, std::vector<pf_t> &pu, std::vector
     }
 
 }
+void remake_structure(std::string &structure, sparse_tree &tree){
+    cand_pos_t n = structure.length();
+    std::vector<int> pairs;
+    for (cand_pos_t j = 0; j < n; ++j) {
+        if (structure[j] == '(') pairs.push_back(j);
+        
+        if (structure[j] == ')') {
+            int i = pairs.back();
+            pairs.pop_back();
+            if(!tree.weakly_closed(i,j)){
+                structure[i] = '[';
+                structure[j] = ']';
+            }
+        }
+    }
+}
 
 /**
  * @brief Register a candidate
  * @param i start
  * @param j end
- * @param e energy of candidate "V(i,j)"
+ * @param e energy of candidate "M(i,j)"
  */
 void register_candidate(std::vector<cand_list_t> &CL, cand_pos_t const &i, cand_pos_t const &j, pf_t const &e) {
     CL[j].emplace_back(cand_entry_t(i, e));
@@ -99,16 +115,6 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     // Prune list to obtain unpaired probabilities as well as
     // to have pp store only pairs whose p(i,j) > pu[i] + pu[j] 
     prune_plist(p,pu,pp,pl,plin,tree,gamma);
-
-    // for(int i = 0;i<pp.size();++i){
-    //     pp[i].p*=num_samples;
-    // }
-    // for(int i = 0;i<pu.size();++i){
-    //     pu[i]*=num_samples;
-    // }
-    // maxWeightMatching MWW(pp,n+1);
-    // pf_t MEA = MWW.maximumWeightedMatching(pu,structure,tree);
-    // MEA/=num_samples;
 
     std::vector<pf_t> Mi(n+1);
     std::vector<pf_t> Mi1(n+1);
@@ -148,11 +154,12 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
     MEAdat bdat(structure,gamma,pl,pu,CL,Mi1);
     mea_backtrack(bdat, 1, n, 0);
     structure = bdat.structure;
+    remake_structure(structure,tree);
 
-    for(cand_pos_t i =0;i<plin.size();++i){
+    for(cand_pos_t i =0;i<(cand_pos_t) plin.size();++i){
         MEA+=2 * gamma * plin[i].p;
-        structure[plin[i].i-1] = '[';
-        structure[plin[i].j-1] = ']';
+        structure[plin[i].i-1] = '(';
+        structure[plin[i].j-1] = ')';
     }
     this->MEA_structure = structure;
     return MEA;
