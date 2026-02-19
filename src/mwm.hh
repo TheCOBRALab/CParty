@@ -5,18 +5,16 @@
 #include "base_types.hh"
 
 #include <algorithm>
-/**Weighted maximum matching in general graphs.
- * 
-The algorithm is taken from "Efficient Algorithms for Finding Maximum
-Matching in Graphs" by Zvi Galil, ACM Computing Surveys, 1986.
-It is based on the "blossom" method for finding augmenting paths and
-the "primal-dual" method for finding a matching of maximum weight, both
-due to Jack Edmonds.
-Some ideas came from "Implementation of algorithms for maximum matching
-on non-bipartite graphs" by H.J. Gabow, Standford Ph.D. thesis, 1973.
-
-A C program for maximum weight matching by Ed Rothberg was used extensively
-to validate this new code.
+/**
+ * Adapted from the python code from https://jorisvr.nl/article/maximum-matching
+ * Weighted maximum matching in general graphs.
+ * The algorithm is taken from "Efficient Algorithms for Finding Maximum
+ * Matching in Graphs" by Zvi Galil, ACM Computing Surveys, 1986.
+ * It is based on the "blossom" method for finding augmenting paths and
+ * the "primal-dual" method for finding a matching of maximum weight, both
+ * due to Jack Edmonds.
+ * Some ideas came from "Implementation of algorithms for maximum matching
+ * on non-bipartite graphs" by H.J. Gabow, Standford Ph.D. thesis, 1973.
 **/
 class maxWeightMatching{
     /**Compute a maximum-weighted matching in the general undirected
