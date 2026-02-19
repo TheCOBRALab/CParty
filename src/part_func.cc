@@ -87,7 +87,7 @@ void W_final_pf::exp_params_rescale(double mfe) {
 
     if (exp_params_->pf_scale < 1.) exp_params_->pf_scale = 1.;
 
-    exp_params_->pf_scale = 1.;
+    // exp_params_->pf_scale = 1.;
 
     this->scale[0] = 1.;
     this->scale[1] = (pf_t)(1. / exp_params_->pf_scale);
