@@ -24,9 +24,28 @@ struct elem_prob_s{
     }
 };
 
+struct MEAdat {
+  std::string structure;
+  double gamma;
+  std::vector<elem_prob_s> pl;
+  std::vector<pf_t> pu;
+  std::vector<pf_t> Mi;
+  std::vector<cand_list_t> CL;
+  MEAdat(std::string &structure,double &gamma,std::vector<elem_prob_s> &pl,std::vector<pf_t> &pu,std::vector<cand_list_t> &CL,std::vector<pf_t> &Mi){
+    this->structure = structure;
+    this->gamma = gamma;
+    this->pl = pl;
+    this->pu = pu;
+    this->CL = CL;
+    this->Mi = Mi;
+  }
+};
+
 void plist_from_probs(std::vector<elem_prob_s> &p,std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> samples, cand_pos_t n, int num_samples, double cutoff);
 
-void prune_plist(std::vector<elem_prob_s> &p, std::vector<pf_t> &pu, std::vector<elem_prob_s> &pl, std::vector<elem_prob_s> &pp,  std::vector<elem_prob_s> &plpk, sparse_tree& tree,double gamma);
+void prune_plist(std::vector<elem_prob_s> &p, std::vector<pf_t> &pu, std::vector<elem_prob_s> &pp,std::vector<elem_prob_s> &pl,std::vector<elem_prob_s> &plin,sparse_tree &tree,double gamma);
+
+void mea_backtrack(MEAdat &bdat,cand_pos_t i,cand_pos_t j, int pair);
 
 
 #endif
