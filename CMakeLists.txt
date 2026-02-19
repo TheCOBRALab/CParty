@@ -26,6 +26,7 @@ SET(SOURCE
   src/dot_plot.cc
   src/mea.cc
   src/centroid.cc
+  src/mwm.cc
 )
 
 set(constraints_SOURCE

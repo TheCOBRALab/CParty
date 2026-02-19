@@ -73,8 +73,6 @@ W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_fre
     W.resize(n + 1, scale[1]);
     WI.resize(total_length, scale[1]);
 
-    /**     MEA       */
-    // probs.resize(total_length,0);
 }
 
 W_final_pf::~W_final_pf() {}
@@ -210,7 +208,7 @@ pf_t W_final_pf::hfold_MEA(sparse_tree &tree){
 pf_t W_final_pf::hfold_centroid(sparse_tree &tree){
     pf_t dist = 0;
     pf_t diversity = 0;
-    std::string centroid = compute_centroid_PK_only(tree,dist,diversity);
+    std::string centroid = compute_centroid(tree,dist,diversity);
     this->centroid_structure = centroid;
     this->ensemble_diversity = diversity;
     return dist;

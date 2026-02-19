@@ -1,6 +1,7 @@
 input=$1
-file="/Users/mateo2/Documents/Code/output2/fasta/$input.txt";
-file2="/Users/mateo2/Documents/Code/output2/structures/$input.txt";
+file="/Users/mateo2/Documents/Code/outputCParty/fasta/$input.txt";
+file2="/Users/mateo2/Documents/Code/outputCParty/structures/$input.txt";
+TIMEFMT=$'%*E\t%M'
 exec 5<$file
 exec 6<$file2
 i=0
@@ -18,7 +19,9 @@ echo $line1 > "out1.txt"
 # gtime -o out2.txt -f "%e\t%M" /Users/mateo2/Documents/Code/includes/Vienna/bin/RNAfold -d1 --constraint<out1.txt --enforceConstraint out1.txt
 # ./build/Spark -P "/Users/mateo2/Documents/Code/Spark/src/params/parameters_DP09_Vienna.txt" -d1 -r $line2  $line1 > "/Users/mateo2/Documents/Code/Spark/out.txt";
 # echo $line > out2.txt;
-# gtime -o out.txt -f "%e\t%M" ./build/CParty -d2 -r $line2 $line1
+{ time ./build/CParty -d2 -r $line2 $line1 > "out1.txt"; } 2>"out.txt"
+cat "out.txt" >> "/Users/mateo2/Documents/Code/outputCParty/time/CParty/$input.txt"
+cat "out1.txt" >> "/Users/mateo2/Documents/Code/outputCParty/proof/CParty/$input.txt"
 # echo $line1
 # echo $line2
 # /Users/mateo2/Documents/Code/includes/Vienna/bin/RNAfold -d2 --constraint<out1.txt --enforceConstraint out1.txt -p --noPS --noDP > "out.txt"
@@ -26,7 +29,7 @@ echo $line1 > "out1.txt"
 # /Users/mateo2/Documents/Code/ViennaRNA-2.7.0/src/bin/RNAFold -p -d2 --noPS --noDP -P "/Users/mateo2/Documents/Code/CParty/params/rna_DirksPierce09.par" --MEA out1.txt > "out.txt"
 # ../util/a.o
 # cat "/Users/mateo2/Documents/Code/CParty/out2.txt" >> "/Users/mateo2/Documents/Code/output2/proof/pkfree/RNAFold/$input.txt"
-./build/CParty -d2 -p -r $line2 $line1 >> "/Users/mateo2/Documents/Code/output2/proof/pkfree/CParty/$input.txt"
+# ./build/CParty -d2 -p -r $line2 $line1 >> "/Users/mateo2/Documents/Code/output2/proof/pkfree/CParty/$input.txt"
 ########## PKfreee #########
 
 
@@ -43,6 +46,7 @@ echo $line1 > "out1.txt"
 
 # echo /usr/bin/time -o out.txt -f "%e\t%M" ./build/Spark -P "/home/mgray7/Spark/src/params/parameters_DP09_Vienna.txt" -p -d1 -r \"$line2\"  $line1;
 # echo $line2
+echo $i
 fi
 i=$((i+1));
 done
