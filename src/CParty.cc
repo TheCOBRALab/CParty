@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
         // kevin: june 22 2017
         // Mateo: Sept 13 2023
         // changed format for ouptut to stdout
-        std::cout << seq << std::endl;
+        // std::cout << seq << std::endl;
         if (result_list.size() == 1) {
             std::cout << result_list[0].get_restricted() << std::endl;
             std::cout << result_list[0].get_final_structure() << " (" << result_list[0].get_final_energy() << ")" << std::endl;
@@ -250,6 +250,7 @@ int main(int argc, char *argv[]) {
             std::cout << result_list[0].get_centroid_structure() << " (" << result_list[0].get_distance() << ")" << std::endl;
             std::cout << result_list[0].get_fatgraph() << " (" << result_list[0].get_fatgraph_frequency() << ")" << std::endl;
             std::cout << "frequency of MFE structure in ensemble: " << result_list[0].get_frequency() << "; ensemble diversity " << result_list[0].get_diversity() << std::endl;
+            // std::cout << result_list[0].get_final_energy() << "\t" << result_list[0].get_pf_energy() << "\t" << result_list[0].get_distance() << "\t" << result_list[0].get_MEA() << std::endl;
         } else {
             for (cand_pos_t i = 0; i < number_of_output; i++) {
                 if (i>0 && result_list[i].get_final_structure() == result_list[i - 1].get_final_structure()) continue;

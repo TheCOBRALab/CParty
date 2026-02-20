@@ -10,18 +10,36 @@ while read line1 <&5 && read line2 <&6; do
 if ((i % 2 == 1))  
 # echo $line1 
 then
-echo $line1 > "out1.txt"
+echo $line1 > "out2.txt"
 # echo $line1
-# echo $line2 >> "out1.txt"
+# echo $line2 >> "out2.txt"
 # gtime -o out.txt -f "%e\t%M" ./build/Spark -P "/Users/mateo2/Documents/Code/Spark/src/params/parameters_DP09_Vienna.txt" -d1 -r $line2  $line1;
 # gtime -o out.txt -f "%e\t%M" /Users/mateo2/Documents/Code/HFold/HFold -s $line1 -r $line2
 
 # gtime -o out2.txt -f "%e\t%M" /Users/mateo2/Documents/Code/includes/Vienna/bin/RNAfold -d1 --constraint<out1.txt --enforceConstraint out1.txt
 # ./build/Spark -P "/Users/mateo2/Documents/Code/Spark/src/params/parameters_DP09_Vienna.txt" -d1 -r $line2  $line1 > "/Users/mateo2/Documents/Code/Spark/out.txt";
 # echo $line > out2.txt;
-{ time ./build/CParty -d2 -r $line2 $line1 > "out1.txt"; } 2>"out.txt"
-cat "out.txt" >> "/Users/mateo2/Documents/Code/outputCParty/time/CParty/$input.txt"
-cat "out1.txt" >> "/Users/mateo2/Documents/Code/outputCParty/proof/CParty/$input.txt"
+
+# Regular CParty
+# { time ./build/CParty -d2 -r $line2 $line1 > "out1.txt"; } 2>"out.txt"
+# cat "out.txt" >> "/Users/mateo2/Documents/Code/outputCParty/time/CParty/$input.txt"
+# cat "out1.txt" >> "/Users/mateo2/Documents/Code/outputCParty/proof/CParty/$input.txt"
+
+# Regular RNAFold
+# { time /Users/mateo2/Documents/Code/ViennaRNA-2.7.2/src/bin/RNAfold out2.txt --constraint<out2.txt --enforceConstraint -P "/Users/mateo2/Documents/Code/Spark/params/rna_DirksPierce09.par" -p --MEA --noPS --noDP > "out1.txt"; } 2>"out.txt"
+# cat "out.txt" >> "/Users/mateo2/Documents/Code/outputCParty/time/RNAFold/$input.txt"
+# cat "out1.txt" >> "/Users/mateo2/Documents/Code/outputCParty/proof/RNAFold/$input.txt"
+
+# PKfree CParty
+./build/CParty -d2 -p -s 10000 $line1 > "out1.txt"
+cat "out1.txt" >> "/Users/mateo2/Documents/Code/OutputCParty/pkfree/CParty/$input.txt"
+# PKfree RNAFold
+# { time /Users/mateo2/Documents/Code/ViennaRNA-2.7.2/src/bin/RNAfold out2.txt --constraint<out2.txt --enforceConstraint -P "/Users/mateo2/Documents/Code/Spark/params/rna_DirksPierce09.par" -p --MEA --noPS --noDP > "out1.txt"; } 2>"out.txt"
+# cat "out1.txt" >> "/Users/mateo2/Documents/Code/OutputCParty/pkfree/RNAFold/$input.txt"
+
+
+
+
 # echo $line1
 # echo $line2
 # /Users/mateo2/Documents/Code/includes/Vienna/bin/RNAfold -d2 --constraint<out1.txt --enforceConstraint out1.txt -p --noPS --noDP > "out.txt"

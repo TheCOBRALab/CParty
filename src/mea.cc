@@ -122,40 +122,40 @@ pf_t W_final_pf::compute_MEA(sparse_tree &tree,double gamma){
 
     pf_t MEA = 0.;
     cand_pos_t index=0;
-    for (cand_pos_t i = n; i > 0; --i) {
-        Mi[i] = pu[i];
-        if ((pl[index].i == i) && (pl[index].i > pl[index].j)) ++index;
+    if(!pl.empty()){
+        for (cand_pos_t i = n; i > 0; --i) {
+            Mi[i] = pu[i];
+            if ((pl[index].i == i) && (pl[index].i > pl[index].j)) ++index;
 
-        for (cand_pos_t j = i + 1; j <= n; ++j) {
-            Mi[j] = Mi[j - 1] + pu[j];
+            for (cand_pos_t j = i + 1; j <= n; ++j) {
+                Mi[j] = Mi[j - 1] + pu[j];
 
-            for (auto it = CL[j].begin(); CL[j].end() != it && it->first >= i; ++it) {
-                cand_pos_t k = it->first;
-                pf_t EA = it->second + Mi[k-1];
-                Mi[j] = std::max(Mi[j], EA);
-            }
-
-            if ((pl[index].i == i) && (pl[index].j == j)) {
-                pf_t EA = Mi1[j-1];
-
-                EA += 2 * gamma * pl[index].p;
-
-                if (Mi[j] < EA) {
-                Mi[j] = EA;
-                register_candidate(CL,i,j,EA);
+                for (auto it = CL[j].begin(); CL[j].end() != it && it->first >= i; ++it) {
+                    cand_pos_t k = it->first;
+                    pf_t EA = it->second + Mi[k-1];
+                    Mi[j] = std::max(Mi[j], EA);
                 }
-                ++index;
+
+                if ((pl[index].i == i) && (pl[index].j == j)) {
+                    pf_t EA = Mi1[j-1];
+
+                    EA += 2 * gamma * pl[index].p;
+
+                    if (Mi[j] < EA) {
+                    Mi[j] = EA;
+                    register_candidate(CL,i,j,EA);
+                    }
+                    ++index;
+                }
             }
+            Mi.swap(Mi1);
         }
-        Mi.swap(Mi1);
+        MEA = std::max(MEA, Mi1[n]);
+        MEAdat bdat(structure,gamma,pl,pu,CL,Mi1);
+        mea_backtrack(bdat, 1, n, 0);
+        structure = bdat.structure;
     }
-    MEA = std::max(MEA, Mi1[n]);
-
-    MEAdat bdat(structure,gamma,pl,pu,CL,Mi1);
-    mea_backtrack(bdat, 1, n, 0);
-    structure = bdat.structure;
     remake_structure(structure,tree);
-
     for(cand_pos_t i =0;i<(cand_pos_t) plin.size();++i){
         MEA+=2 * gamma * plin[i].p;
         structure[plin[i].i-1] = '(';
