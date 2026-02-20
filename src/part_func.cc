@@ -1735,22 +1735,26 @@ char W_final_pf::bpp_symbol(pf_t *P) {
 
     if (P[1] > 0.667) return '(';
     if (P[2] > 0.667) return ')';
-    if ((P[1] + P[2]) > P[0]) {
-        if ((P[1] / (P[1] + P[2])) > 0.667) return '{';
-
-        if ((P[2] / (P[1] + P[2])) > 0.667)
-            return '}';
-    }
-
     if (P[3] > 0.667) return '[';
     if (P[4] > 0.667) return ']';
-    if ((P[4] + P[5]) > P[0]) {
-        if ((P[3] / (P[3] + P[5])) > 0.667) return '/';
+    if(P[1]+P[2] > P[3]+P[4]){
+        if ((P[1] + P[2]) > P[0]) {
+            if ((P[1] / (P[1] + P[2])) > 0.667) return '{';
 
-        if ((P[4] / (P[3] + P[4])) > 0.667)
-            return '\\';
+            if ((P[2] / (P[1] + P[2])) > 0.667)
+                return '}';
+            else return '|';
+        }
+    } else{ 
+        if ((P[3] + P[4]) > P[0]) {
+            if ((P[3] / (P[3] + P[4])) > 0.667) return '/';
+
+            if ((P[4] / (P[3] + P[4])) > 0.667)
+                return '\\';
+            else return '|';
+        }
     }
-    return '|';
+    return ':';
     
     // return ':';
 }
