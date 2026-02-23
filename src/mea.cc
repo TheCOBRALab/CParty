@@ -80,9 +80,10 @@ void remake_structure(std::string &structure, sparse_tree &tree){
         if (structure[j] == '(') pairs.push_back(j);
         
         if (structure[j] == ')') {
-            int i = pairs.back();
+            cand_pos_t i = pairs.back();
             pairs.pop_back();
-            if(!tree.weakly_closed(i,j)){
+            // incremeted by 1 because we view the structure internally as 1->n
+            if(!tree.weakly_closed(i+1,j+1)){
                 structure[i] = '[';
                 structure[j] = ']';
             }

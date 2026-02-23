@@ -226,7 +226,7 @@ pf_t W_final_pf::hfold_fatgraph(){
         if(it.second>fatgraph_frequency){
             fatgraph_frequency = it.second;
             best_fatgraph = it.first;
-        } 
+        }
     }
     this->best_fatgraph = best_fatgraph;
     this->fatgraph_frequency = (pf_t) fatgraph_frequency/num_samples;
