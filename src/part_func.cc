@@ -268,7 +268,6 @@ pf_t W_final_pf::exp_Mbloop(cand_pos_t i, cand_pos_t j) {
 }
 
 pf_t W_final_pf::HairpinE(cand_pos_t i, cand_pos_t j) {
-
     const int ptype_closing = pair[S_[i]][S_[j]];
     if (ptype_closing == 0) return 0;
     pf_t e_h = static_cast<pf_t>(exp_E_Hairpin(j - i - 1, ptype_closing, S1_[i + 1], S1_[j - 1], &seq.c_str()[i - 1], exp_params_));

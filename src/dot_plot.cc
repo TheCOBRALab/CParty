@@ -51,7 +51,8 @@ void create_PS_footer(std::ofstream &out) {
 
 void create_PS_data(std::ofstream &out, std::unordered_map<std::pair<cand_pos_t, cand_pos_t>, cand_pos_t, SzudzikHash> &samples,
                     std::vector<Node> tree, std::string MFE_structure, int num_samples, cand_pos_t n) {
-    int min_samples = .1 * num_samples;
+    // int min_samples = .1 * num_samples;
+    int min_samples = 0;
     for (cand_pos_t i = 1; i <= n; ++i) {
         for (cand_pos_t j = i; j <= n; ++j) {
             std::pair<cand_pos_tu, cand_pos_tu> base_pair(i, j);

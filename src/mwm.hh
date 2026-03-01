@@ -16,6 +16,11 @@
  * Some ideas came from "Implementation of algorithms for maximum matching
  * on non-bipartite graphs" by H.J. Gabow, Standford Ph.D. thesis, 1973.
 **/
+/**
+ * Not currently being used as MWM does not ensure nesting for PK-free 
+ * connections which means 21.25 and 22.26 is a fine set up base pairs
+ * despite the fact that neither are in the input (and therefore allowed)
+ */
 class maxWeightMatching{
     /**Compute a maximum-weighted matching in the general undirected
     weighted graph given by "edges".  If "maxcardinality" is true,
