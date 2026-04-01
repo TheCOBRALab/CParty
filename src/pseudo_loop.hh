@@ -4,6 +4,7 @@
 #include "constants.hh"
 #include "h_struct.hh"
 #include "s_energy_matrix.hh"
+#include "SHAPE.hh"
 #include <stdio.h>
 #include <string.h>
 
@@ -13,7 +14,7 @@ class pseudo_loop {
 
   public:
     // constructor
-    pseudo_loop(std::string seq, std::string restricted, s_energy_matrix *V, short *S, short *S1, vrna_param_t *params);
+    pseudo_loop(std::string seq, std::string restricted, s_energy_matrix *V, SHAPEData *ShapeData, short *S, short *S1, vrna_param_t *params);
 
     // destructor
     ~pseudo_loop();
@@ -54,6 +55,7 @@ class pseudo_loop {
     std::string structure;
     minimum_fold *f;
     vrna_param_t *params_;
+    SHAPEData *ShapeData;
 
     // Hosna
     std::vector<energy_t> WI;   // the loop inside a pseudoknot (in general it looks like a W but is inside a pseudoknot)

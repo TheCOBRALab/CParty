@@ -3,6 +3,7 @@
 
 #include "base_types.hh"
 #include "sparse_tree.hh"
+#include "SHAPE.hh"
 #include <string>
 #include <vector>
 
@@ -14,9 +15,8 @@ extern "C" {
 
 class s_energy_matrix {
   public:
-    friend class s_multi_loop;
 
-    s_energy_matrix(std::string seq, cand_pos_t length, short *S, short *S1, vrna_param_t *params);
+    s_energy_matrix(std::string seq, cand_pos_t length, SHAPEData *ShapeData, short *S, short *S1, vrna_param_t *params);
     // The constructor
 
     ~s_energy_matrix();
@@ -26,6 +26,7 @@ class s_energy_matrix {
 
     short *S_;
     short *S1_;
+    SHAPEData *ShapeData;
     // VM_sub should be NULL if you don't want suboptimals
 
     // void compute_energy (int i, int j);

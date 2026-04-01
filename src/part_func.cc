@@ -10,24 +10,8 @@
 #include <string>
 
 #define debug 0
-/*
- * If the global use_mfelike_energies flag is set, truncate doubles to int
- * values and cast back to double. This makes the energy parameters of the
- * partition (folding get_scaled_exp_params()) compatible with the mfe folding
- * parameters (get_scaled_exp_params()), e.g. for explicit partition function
- * computations.
- */
-#define TRUNC_MAYBE(X) ((!pf_smooth) ? (double)((int)(X)) : (X))
-/* Rescale Free energy contribution according to deviation of temperature from measurement conditions */
-#define RESCALE_dG(dG, dH, dT) ((dH) - ((dH) - (dG)) * dT)
 
-/*
- * Rescale Free energy contribution according to deviation of temperature from measurement conditions
- * and convert it to Boltzmann Factor for specific kT
- */
-#define RESCALE_BF(dG, dH, dT, kT) (exp(-TRUNC_MAYBE((double)RESCALE_dG((dG), (dH), (dT))) * 10. / kT))
-
-W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free,bool pk_only, int dangle, double energy, int num_samples, bool PSplot)
+W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure,SHAPEData &ShapeData, bool pk_free,bool pk_only, int dangle, double energy, int num_samples, bool PSplot, double gamma)
     : exp_params_(scale_pf_parameters()) {
     this->seq = seq;
     this->MFE_structure = MFE_structure;
@@ -36,6 +20,8 @@ W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_fre
     this->pk_only = pk_only;
     this->PSplot = PSplot;
     this->num_samples = num_samples;
+    this->gamma = gamma;
+    this->ShapeData = &ShapeData;
 
     make_pair_matrix();
     exp_params_->model_details.dangles = dangle;
@@ -111,6 +97,7 @@ void W_final_pf::rescale_pk_globals() {
     double kT = exp_params_->model_details.betaScale * (exp_params_->model_details.temperature + K0) * GASCONST; /* kT in cal/mol  */
     double TT = (exp_params_->model_details.temperature + K0) / (Tmeasure);
     int pf_smooth = exp_params_->model_details.pf_smooth;
+    ShapeData->rescale_calculate(kT,TT,pf_smooth);
 
     expPS_penalty = RESCALE_BF(PS_penalty, PS_penalty * 3, TT, kT);
     expPSM_penalty = RESCALE_BF(PSM_penalty, PSM_penalty * 3, TT, kT);
@@ -201,7 +188,7 @@ pf_t W_final_pf::hfold_pf(sparse_tree &tree) {
     return energy;
 }
 pf_t W_final_pf::hfold_MEA(sparse_tree &tree){
-    pf_t MEA = compute_MEA(tree,1);
+    pf_t MEA = compute_MEA(tree,gamma);
     return MEA;
 }
 
@@ -289,6 +276,7 @@ pf_t W_final_pf::compute_internal_restricted(cand_pos_t i, cand_pos_t j, std::ve
                                                       S1_[k - 1], S1_[l + 1], exp_params_);
                     cand_pos_t u1 = k - i - 1;
                     cand_pos_t u2 = j - l - 1;
+                    if(i+1==k && j-1==l) v_iloop_kl*=ShapeData->get_expcalculated(i)*ShapeData->get_expcalculated(j); // Decide whether shape can be added to internal as well as stack
                     v_iloop_kl *= scale[u1 + u2 + 2];
                     v_iloop += v_iloop_kl;
                 }
@@ -564,7 +552,7 @@ pf_t W_final_pf::get_e_stP(cand_pos_t i, cand_pos_t j) {
     if (i + 1 == j - 1) { // TODO: do I need something like that or stack is taking care of this?
         return 0;
     }
-    pf_t e_st = compute_int(i, j, i + 1, j - 1);
+    pf_t e_st = compute_int(i, j, i + 1, j - 1)*ShapeData->get_expcalculated(i)*ShapeData->get_expcalculated(j);
 
     return pow(e_st, e_stP_penalty);
 }
@@ -869,6 +857,7 @@ void W_final_pf::Sample_V(cand_pos_t i, cand_pos_t j, std::string &structure,
                     V_temp = get_energy(k, l)
                              * exp_E_IntLoop(u1, u2, ptype_closing, rtype[pair[S_[k]][S_[l]]], S1_[i + 1], S1_[j - 1], S1_[k - 1], S1_[l + 1],
                                              exp_params_);
+                    if(i+1==k && j-1==l) V_temp*=ShapeData->get_expcalculated(i)*ShapeData->get_expcalculated(j);
                     V_temp *= scale[u1 + u2 + 2];
                     qbt1 += V_temp;
                     if (qbt1 >= r) break;

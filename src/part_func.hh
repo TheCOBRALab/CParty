@@ -2,6 +2,7 @@
 #define PART_FUNC
 #include "base_types.hh"
 #include "sparse_tree.hh"
+#include "SHAPE.hh"
 #include <cstring>
 #include <string>
 #include <unordered_map>
@@ -13,6 +14,23 @@ extern "C" {
 #include "ViennaRNA/params/default.h"
 #include "ViennaRNA/params/io.h"
 }
+
+/*
+ * If the global use_mfelike_energies flag is set, truncate doubles to int
+ * values and cast back to double. This makes the energy parameters of the
+ * partition (folding get_scaled_exp_params()) compatible with the mfe folding
+ * parameters (get_scaled_exp_params()), e.g. for explicit partition function
+ * computations.
+ */
+#define TRUNC_MAYBE(X) ((!pf_smooth) ? (double)((int)(X)) : (X))
+/* Rescale Free energy contribution according to deviation of temperature from measurement conditions */
+#define RESCALE_dG(dG, dH, dT) ((dH) - ((dH) - (dG)) * dT)
+
+/*
+ * Rescale Free energy contribution according to deviation of temperature from measurement conditions
+ * and convert it to Boltzmann Factor for specific kT
+ */
+#define RESCALE_BF(dG, dH, dT, kT) (exp(-TRUNC_MAYBE((double)RESCALE_dG((dG), (dH), (dT))) * 10. / kT))
 
 struct SzudzikHash {
     cand_pos_t operator()(const std::pair<cand_pos_t, cand_pos_t> pair) const {
@@ -37,8 +55,9 @@ class W_final_pf {
     pf_t ensemble_diversity;
     pf_t fatgraph_frequency;
     std::unordered_map<std::string, int> structures;
+    double gamma;
 
-    W_final_pf(std::string &seq, std::string &MFE_structure, bool pk_free, bool pk_only, int dangle, double energy, int num_samples, bool PSplot);
+    W_final_pf(std::string &seq, std::string &MFE_structure,SHAPEData &ShapeData, bool pk_free, bool pk_only, int dangle, double energy, int num_samples, bool PSplot, double gamma);
     // constructor for the restricted mfe case
 
     ~W_final_pf();
@@ -145,6 +164,7 @@ class W_final_pf {
     bool PSplot;
     cand_pos_t n;
     std::vector<cand_pos_t> index;
+    SHAPEData *ShapeData;
 
     short *S_;
     short *S1_;

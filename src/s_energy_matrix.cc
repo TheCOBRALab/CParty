@@ -29,7 +29,7 @@
 
 #include "s_energy_matrix.hh"
 
-s_energy_matrix::s_energy_matrix(std::string seq, cand_pos_t length, short *S, short *S1, vrna_param_t *params)
+s_energy_matrix::s_energy_matrix(std::string seq, cand_pos_t length,  SHAPEData *ShapeData, short *S, short *S1, vrna_param_t *params)
 // The constructor
 {
     params_ = params;
@@ -39,6 +39,7 @@ s_energy_matrix::s_energy_matrix(std::string seq, cand_pos_t length, short *S, s
 
     n = length;
     seq_ = seq;
+    this->ShapeData = ShapeData;
 
     // an vector with indexes, such that we don't work with a 2D array, but with a 1D array of length (n*(n+1))/2
     index.resize(n + 1);
@@ -337,6 +338,7 @@ energy_t s_energy_matrix::compute_internal_restricted(cand_pos_t i, cand_pos_t j
                     energy_t v_iloop_kl = E_IntLoop(k - i - 1, j - l - 1, ptype_closing, rtype[pair[S_[k]][S_[l]]], S1_[i + 1], S1_[j - 1],
                                                     S1_[k - 1], S1_[l + 1], const_cast<paramT *>(params))
                                           + get_energy(k, l);
+                    if(i+1==k && j-1==l) v_iloop_kl += ShapeData->get_calculated(i) + ShapeData->get_calculated(j);
                     v_iloop = std::min(v_iloop, v_iloop_kl);
                 }
             }
@@ -352,7 +354,7 @@ energy_t s_energy_matrix::compute_stack(cand_pos_t i, cand_pos_t j, const paramT
     cand_pos_t l = j - 1;
     return E_IntLoop(k - i - 1, j - l - 1, ptype_closing, rtype[pair[S_[k]][S_[l]]], S1_[i + 1], S1_[j - 1], S1_[k - 1], S1_[l + 1],
                      const_cast<paramT *>(params))
-           + get_energy(k, l);
+           + get_energy(k, l) + ShapeData->get_calculated(i) + ShapeData->get_calculated(j);
 }
 
 energy_t s_energy_matrix::compute_int(cand_pos_t i, cand_pos_t j, cand_pos_t k, cand_pos_t l, const paramT *params) {
@@ -421,6 +423,8 @@ void s_energy_matrix::compute_hotspot_energy(cand_pos_t i, cand_pos_t j, bool is
     energy_t energy = 0;
     if (is_stack) {
         energy = compute_stack(i, j, params_);
+        energy+=ShapeData->get_calculated(i);
+        energy+=ShapeData->get_calculated(j);
         // printf("stack: %d\n",energy);
     } else {
         energy = 0; // HairpinE(seq_,S_,S1_,params_,i,j);

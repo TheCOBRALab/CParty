@@ -7,10 +7,11 @@
 #include <stdlib.h>
 #include <string>
 
-pseudo_loop::pseudo_loop(std::string seq, std::string res, s_energy_matrix *V, short *S, short *S1, vrna_param_t *params) {
+pseudo_loop::pseudo_loop(std::string seq, std::string res, s_energy_matrix *V, SHAPEData *ShapeData, short *S, short *S1, vrna_param_t *params) {
     this->seq = seq;
     this->res = res;
     this->V = V;
+    this->ShapeData = ShapeData;
     S_ = S;
     S1_ = S1;
     params_ = params;
@@ -619,7 +620,7 @@ energy_t pseudo_loop::get_e_stP(cand_pos_t i, cand_pos_t j) {
     if (i + 1 == j - 1) { // TODO: do I need something like that or stack is taking care of this?
         return INF;
     }
-    energy_t ss = compute_int(i, j, i + 1, j - 1, params_);
+    energy_t ss = compute_int(i, j, i + 1, j - 1, params_) + ShapeData->get_calculated(i) + ShapeData->get_calculated(j);
     return lrint(e_stP_penalty * ss);
 }
 

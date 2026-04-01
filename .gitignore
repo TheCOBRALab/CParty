@@ -33,8 +33,6 @@
 
 # build
 /build/
-bash.sh
-bashConstraint.sh
-dot.ps
-out1.txt
-out2.txt
+*.ps
+*.txt
+*.sh

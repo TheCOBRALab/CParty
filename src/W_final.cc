@@ -13,10 +13,11 @@
 // to create all the matrixes required for simfold
 // and then calls allocate_space in here to allocate
 // space for WMB and V_final
-W_final::W_final(std::string seq, std::string res, bool pk_free, bool pk_only, int dangle) : params_(scale_parameters()) {
+W_final::W_final(std::string seq, std::string res, SHAPEData &ShapeData, bool pk_free, bool pk_only, int dangle) : params_(scale_parameters()) {
     seq_ = seq;
     this->res = res;
     this->n = seq.length();
+    this->ShapeData = &ShapeData;
     make_pair_matrix();
     params_->model_details.dangles = dangle;
     S_ = encode_sequence(seq.c_str(), 0);
@@ -43,11 +44,11 @@ void W_final::space_allocation() {
     // From simfold
     f = new minimum_fold[n + 1];
 
-    V = new s_energy_matrix(seq_, n, S_, S1_, params_);
+    V = new s_energy_matrix(seq_, n,ShapeData, S_, S1_, params_);
     structure = std::string(n + 1, '.');
 
     // Hosna: June 20th 2007
-    WMB = new pseudo_loop(seq_, res, V, S_, S1_, params_);
+    WMB = new pseudo_loop(seq_, res, V, ShapeData, S_, S1_, params_);
 }
 
 double W_final::hfold(sparse_tree &tree) {
@@ -225,6 +226,7 @@ void W_final::backtrack_restricted(seq_interval *cur_interval, sparse_tree &tree
                         if (tree.up[j - 1] >= (j - l - 1)) {
 
                             energy_t tmp = V->compute_int(i, j, k, l, params_);
+                            if(i+1==k && j-1==l) tmp += ShapeData->get_calculated(i) + ShapeData->get_calculated(j);
                             if (tmp < min) {
                                 min = tmp;
                                 best_ip = k;
@@ -788,14 +790,14 @@ void expand_hotspot(s_energy_matrix *V, Hotspot &hotspot, int n) {
 
 // Mateo 13 Sept 2023
 // look for every possible hairpin loop, and try to add a arc to form a larger stack with at least min_stack_size bases
-void get_hotspots(std::string seq, std::vector<Hotspot> &hotspot_list, int max_hotspot, vrna_param_s *params) {
+void get_hotspots(std::string seq, std::vector<Hotspot> &hotspot_list, SHAPEData &ShapeData, int max_hotspot, vrna_param_s *params) {
 
     int n = seq.length();
     s_energy_matrix *V;
     make_pair_matrix();
     short *S_ = encode_sequence(seq.c_str(), 0);
     short *S1_ = encode_sequence(seq.c_str(), 1);
-    V = new s_energy_matrix(seq, n, S_, S1_, params);
+    V = new s_energy_matrix(seq, n, &ShapeData, S_, S1_, params);
     int min_bp_distance = 3;
     int min_stack_size = 3; // the hotspot must be a stack of size >= 3
     // Hotspot current_hotspot;

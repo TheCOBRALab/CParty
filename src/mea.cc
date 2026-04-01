@@ -211,5 +211,3 @@ void mea_backtrack(MEAdat &bdat,cand_pos_t i,cand_pos_t j, int pair){
         exit(1);
     }
 }
-
-// If I find the PK-free MEA where I exclude base pairs that are part of the input. And then just add those base pairs in after. Doesn't that find the MEA?

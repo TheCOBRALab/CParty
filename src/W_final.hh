@@ -7,6 +7,7 @@
 #include "pseudo_loop.hh"
 #include "s_energy_matrix.hh"
 #include "sparse_tree.hh"
+#include "SHAPE.hh"
 #include <cstring>
 #include <string>
 #include <vector>
@@ -17,7 +18,7 @@ extern "C" {
 #include "ViennaRNA/params/io.h"
 }
 
-void get_hotspots(std::string seq, std::vector<Hotspot> &hotspot_list, int max_hotspot, vrna_param_s *params);
+void get_hotspots(std::string seq, std::vector<Hotspot> &hotspot_list, SHAPEData &ShapeData, int max_hotspot, vrna_param_s *params);
 int distance(int left, int right);
 void expand_hotspot(s_energy_matrix *V, Hotspot &hotspot, int n);
 // Mateo 2024
@@ -26,7 +27,7 @@ bool compare_hotspot_ptr(Hotspot &a, Hotspot &b);
 
 class W_final {
   public:
-    W_final(std::string seq, std::string res, bool pk_free, bool pk_only, int dangle);
+    W_final(std::string seq, std::string res, SHAPEData &ShapeData, bool pk_free, bool pk_only, int dangle);
     // constructor for the restricted mfe case
 
     ~W_final();
@@ -58,6 +59,7 @@ class W_final {
     minimum_fold *f;              // the minimum folding, see structs.h
     std::string seq_;
     std::string res;
+    SHAPEData *ShapeData;
     short *S_;
     short *S1_;
     bool pk_free = false;

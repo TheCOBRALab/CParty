@@ -17,6 +17,7 @@ std::string shape_file;
 int dangle_model;
 int subopt;
 int samples;
+double cmdline_gamma;
 
 static char *package_name = 0;
 
@@ -41,8 +42,9 @@ const char *args_info_help[] = {
     "  -k  --pk-only          Only add base pairs which cross the constraint structure. The constraint structure is returned if there are no energetically favorable crossing base pairs",
     "  -d  --dangles          Specify the dangle model to be used (base is 2)",
     "  -P, --paramFile        Read energy parameters from paramfile, instead of using the default parameter set.",
-    "  -s, --samples          Give the number of samples foe the stochastic backtracking (default 1000)",
-    // "  -S  --shape            Give a path to a shape file corresponding to the sequence given",
+    "  -s, --samples          Give the number of samples for the stochastic backtracking (default: 1000)",
+    "  -g, --gamma            Give the gamma value weighting of base pairs in the MEA (default: 1)",
+    "  -S  --shape            Give a path to a shape file corresponding to the sequence given",
     "      --noConv           Do not convert DNA into RNA. This will use the Matthews 2004 parameters for DNA",
     "      --noPS             Don't create a Postscript drawing of the base pair probabilities",
 
@@ -71,7 +73,7 @@ static void init_args_info(struct args_info *args_info) {
     args_info->dangles_help = args_info_help[8];
     args_info->paramFile_help = args_info_help[9];
     args_info->samples_help = args_info_help[10];
-    // args_info->shape_help = args_info_help[10] ;
+    args_info->shape_help = args_info_help[11] ;
     args_info->noConv_help = args_info_help[12];
     args_info->noPS_help = args_info_help[13];
 }
@@ -122,7 +124,8 @@ static void clear_given(struct args_info *args_info) {
     args_info->dangles_given = 0;
     args_info->paramFile_given = 0;
     args_info->samples_given = 0;
-    // args_info->shape_given = 0 ;
+    args_info->gamma_given = 0;
+    args_info->shape_given = 0 ;
     args_info->noConv_given = 0;
     args_info->noPS_given = 0;
 }
@@ -278,12 +281,13 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
                                                {"dangles", 0, NULL, 'd'},
                                                {"paramFile", required_argument, NULL, 'P'},
                                                {"samples", required_argument, NULL, 's'},
-                                               // { "shape",	required_argument, NULL, 'S' },
+                                               {"gamma", required_argument, NULL, 'g'},
+                                               { "shape",	required_argument, NULL, 'S' },
                                                {"noConv", 0, NULL, 0},
                                                {"noPS", 0, NULL, 0},
                                                {0, 0, 0, 0}};
 
-        c = getopt_long(argc, argv, "hVr:i:o:n:pkd:P:s:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hVr:i:o:n:pkd:P:s:g:S:", long_options, &option_index);
 
         if (c == -1) break; /* Exit from `while (1)' loop.  */
 
@@ -328,16 +332,25 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
 
             samples = strtol(optarg, NULL, 10);
             break;
+        case 'g': /* Take in a shape File.  */
 
-            // case 'S':	/* Take in a shape File.  */
+            if (update_arg(0, 0, &(args_info->gamma_given), &(local_args_info.gamma_given), optarg, 0, 0, ARG_NO, 0, 0, "gamma", 'g',
+                           additional_error)) {
+                goto failure;
+            }
 
-            //   if (update_arg( 0 ,
-            //        0 , &(args_info->shape_given),
-            //       &(local_args_info.shape_given), optarg, 0, 0, ARG_NO,0, 0,"shape", 'S',additional_error)){
-            //     goto failure;}
+            cmdline_gamma = strtod(optarg, NULL);
+            break;
 
-            //     shape_file = optarg;
-            //   break;
+            case 'S':	/* Take in a shape File.  */
+
+              if (update_arg( 0 ,
+                   0 , &(args_info->shape_given),
+                  &(local_args_info.shape_given), optarg, 0, 0, ARG_NO,0, 0,"shape", 'S',additional_error)){
+                goto failure;}
+
+                shape_file = optarg;
+              break;
 
         case 'r': /* Specify restricted structure.  */
 

@@ -27,6 +27,7 @@ SET(SOURCE
   src/mea.cc
   src/centroid.cc
   src/mwm.cc
+  src/SHAPE.cc
 )
 
 set(constraints_SOURCE
