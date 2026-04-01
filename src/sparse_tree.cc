@@ -102,7 +102,7 @@ void sparse_tree::create_tree(int n, std::string structure) {
     stackI.push_back(0);
     for (int i = 1; i <= n; ++i) {
 
-        if (structure[i - 1] == 'x') tree[i].pair = -1;
+        if (structure[i - 1] == 'x' || structure[i - 1] == 'X') tree[i].pair = -1;
 
         if (structure[i - 1] == ')') {
             tree[i].pair = stackI.back();
