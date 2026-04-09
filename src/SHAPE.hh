@@ -2,6 +2,7 @@
 #define SHAPE
 
 #include <vector>
+#include <string>
 #include "base_types.hh"
 
 // Consider floats instead of doubles
