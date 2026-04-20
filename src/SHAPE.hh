@@ -1,8 +1,9 @@
 #ifndef SHAPE
 #define SHAPE
 
-#include <vector>
 #include "base_types.hh"
+#include <vector>
+#include <string>
 
 // Consider floats instead of doubles
 class SHAPEData {
