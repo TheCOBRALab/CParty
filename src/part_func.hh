@@ -49,11 +49,9 @@ class W_final_pf {
     std::string structure;
     std::string MEA_structure;
     std::string centroid_structure;
-    std::string best_fatgraph;
     int num_samples;
     pf_t frequency;
     pf_t ensemble_diversity;
-    pf_t fatgraph_frequency;
     std::unordered_map<std::string, int> structures;
     double gamma;
 
@@ -69,7 +67,7 @@ class W_final_pf {
 
     pf_t hfold_centroid(sparse_tree &tree);
 
-    pf_t hfold_fatgraph();
+    void hfold_fatgraph(std::vector<std::pair<std::string,double>> &fatgraphs, int &num_fatgraphs);
 
     vrna_exp_param_t *exp_params_;
 

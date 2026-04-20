@@ -29,6 +29,9 @@ extern int samples;
 // The shape file
 extern std::string shape_file;
 
+// number of fatgraphs outputted
+extern int num_fatgraphs;
+
 // Gamma value for MEA
 extern double cmdline_gamma;
 
@@ -47,6 +50,7 @@ struct args_info {
     const char *samples_help;         /**< @brief Specify the number of samples for the stochastic backtracking (default: 1000).  */
     const char *shape_help; /**< @brief Give shape file as additional input help description.  */
     const char *gamma_help;         /**< @brief Specify the gamma value for MEA base pair weighting (default: 1).  */
+    const char *fatgraph_help;         /**< @brief Specify the number of fatgraphs that are outputted*/
     const char *noConv_help; /**< @brief Turn off automated conversion to RNA help description.  */
     const char *noPS_help;   /**< @brief Turn off automated Postscript file generation.  */
 
@@ -63,6 +67,7 @@ struct args_info {
     unsigned int samples_given;         /**< @brief Whether samples was given.  */
     unsigned int gamma_given;         /**< @brief Whether gamma was given.  */
     unsigned int shape_given ; /**< @brief Whether shape was given.  */
+    unsigned int fatgraph_given;         /**< @brief Whether fatgraph was given.  */
     unsigned int noConv_given; /**< @brief Whether noConv was given.  */
     unsigned int noPS_given;   /**< @brief Whether noPS was given.  */
 

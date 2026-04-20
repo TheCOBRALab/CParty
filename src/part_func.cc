@@ -201,23 +201,21 @@ pf_t W_final_pf::hfold_centroid(sparse_tree &tree){
     return dist;
 }
 
-pf_t W_final_pf::hfold_fatgraph(){
-    std::unordered_map<std::string, int> fatgraphs;
+void W_final_pf::hfold_fatgraph(std::vector<std::pair<std::string,double>> &fatgraphs, int &num_fatgraphs){
+    std::unordered_map<std::string, int> fatgraphs_map;
     for(auto it: structures){
         std::string fatgraph = get_fatgraph(it.first);
-        fatgraphs[fatgraph]+=it.second;
+        fatgraphs_map[fatgraph]+=it.second;
     }
-    std::string best_fatgraph;
+    std::string fatgraph;
     int fatgraph_frequency = 0;
-    for(auto it: fatgraphs){
-        if(it.second>fatgraph_frequency){
-            fatgraph_frequency = it.second;
-            best_fatgraph = it.first;
-        }
+    for(auto it: fatgraphs_map){
+        fatgraph_frequency = it.second;
+        fatgraph = it.first;
+        fatgraphs.push_back(std::make_pair(fatgraph,(double)fatgraph_frequency/num_samples));
     }
-    this->best_fatgraph = best_fatgraph;
-    this->fatgraph_frequency = (pf_t) fatgraph_frequency/num_samples;
-    return this->fatgraph_frequency;
+    std::sort(fatgraphs.begin(), fatgraphs.end(),[](std::pair<std::string,double> a, std::pair<std::string,double> b){ return a.second > b.second;});
+    fatgraphs.resize(std::min(num_fatgraphs,(int)fatgraphs.size()));
 }
 
 pf_t W_final_pf::exp_Extloop(cand_pos_t i, cand_pos_t j) {

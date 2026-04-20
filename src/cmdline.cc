@@ -15,6 +15,7 @@ std::string output_file;
 std::string parameter_file;
 std::string shape_file;
 int dangle_model;
+int num_fatgraphs;
 int subopt;
 int samples;
 double cmdline_gamma;
@@ -45,6 +46,7 @@ const char *args_info_help[] = {
     "  -s, --samples          Give the number of samples for the stochastic backtracking (default: 1000)",
     "  -g, --gamma            Give the gamma value weighting of base pairs in the MEA (default: 1)",
     "  -S  --shape            Give a path to a shape file corresponding to the sequence given",
+    "  -f  --fatgraph         Give the number of fatgraphs outputted, along with their frequencies (default 1)",
     "      --noConv           Do not convert DNA into RNA. This will use the Matthews 2004 parameters for DNA",
     "      --noPS             Don't create a Postscript drawing of the base pair probabilities",
 
@@ -74,8 +76,9 @@ static void init_args_info(struct args_info *args_info) {
     args_info->paramFile_help = args_info_help[9];
     args_info->samples_help = args_info_help[10];
     args_info->shape_help = args_info_help[11] ;
-    args_info->noConv_help = args_info_help[12];
-    args_info->noPS_help = args_info_help[13];
+    args_info->fatgraph_help = args_info_help[12] ;
+    args_info->noConv_help = args_info_help[13];
+    args_info->noPS_help = args_info_help[14];
 }
 void cmdline_parser_print_version(void) {
 
@@ -126,6 +129,7 @@ static void clear_given(struct args_info *args_info) {
     args_info->samples_given = 0;
     args_info->gamma_given = 0;
     args_info->shape_given = 0 ;
+    args_info->fatgraph_given = 0 ;
     args_info->noConv_given = 0;
     args_info->noPS_given = 0;
 }
@@ -282,12 +286,13 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
                                                {"paramFile", required_argument, NULL, 'P'},
                                                {"samples", required_argument, NULL, 's'},
                                                {"gamma", required_argument, NULL, 'g'},
-                                               { "shape",	required_argument, NULL, 'S' },
+                                               {"shape",	required_argument, NULL, 'S' },
+                                               {"fatgraph",	required_argument, NULL, 'f' },
                                                {"noConv", 0, NULL, 0},
                                                {"noPS", 0, NULL, 0},
                                                {0, 0, 0, 0}};
 
-        c = getopt_long(argc, argv, "hVr:i:o:n:pkd:P:s:g:S:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hVr:i:o:n:pkd:P:s:g:S:f:", long_options, &option_index);
 
         if (c == -1) break; /* Exit from `while (1)' loop.  */
 
@@ -323,7 +328,7 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
             parameter_file = optarg;
             break;
 
-        case 's': /* Take in a shape File.  */
+        case 's': /* Take in number of samples.  */
 
             if (update_arg(0, 0, &(args_info->samples_given), &(local_args_info.samples_given), optarg, 0, 0, ARG_NO, 0, 0, "samples", 's',
                            additional_error)) {
@@ -332,7 +337,7 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
 
             samples = strtol(optarg, NULL, 10);
             break;
-        case 'g': /* Take in a shape File.  */
+        case 'g': /* Take in gamma for MEA  */
 
             if (update_arg(0, 0, &(args_info->gamma_given), &(local_args_info.gamma_given), optarg, 0, 0, ARG_NO, 0, 0, "gamma", 'g',
                            additional_error)) {
@@ -350,6 +355,16 @@ int cmdline_parser_internal(int argc, char **argv, struct args_info *args_info, 
                 goto failure;}
 
                 shape_file = optarg;
+              break;
+
+            case 'f':	/* Take in a number of fatgraphs.  */
+
+              if (update_arg( 0 ,
+                   0 , &(args_info->fatgraph_given),
+                  &(local_args_info.fatgraph_given), optarg, 0, 0, ARG_NO,0, 0,"fatgraph", 'f',additional_error)){
+                goto failure;}
+
+                num_fatgraphs = std::stoi(optarg);
               break;
 
         case 'r': /* Specify restricted structure.  */

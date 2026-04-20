@@ -2,7 +2,7 @@
 
 // constructor
 Result::Result(std::string sequence, std::string restricted, double restricted_energy, std::string final_structure, double final_energy,
-               std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA, std::string centroid_structure, pf_t distance,std::string fatgraph,pf_t fatgraph_frquency, pf_t frequency, pf_t diversity) {
+               std::string final_structure_pf, pf_t pf_energy, std::string MEA_structure, pf_t MEA, std::string centroid_structure, pf_t distance,int fatgraph_num, pf_t frequency, pf_t diversity) {
     this->sequence = sequence;
     this->restricted = restricted;
     this->restricted_energy = restricted_energy;
@@ -14,8 +14,7 @@ Result::Result(std::string sequence, std::string restricted, double restricted_e
     this->MEA = MEA;
     this->centroid_structure = centroid_structure;
     this->distance = distance;
-    this->fatgraph = fatgraph;
-    this->fatgraph_frequency = fatgraph_frquency;
+    this->fatgraph_num = fatgraph_num;
     this->frequency = frequency;
     this->diversity = diversity;
 }
@@ -34,7 +33,6 @@ std::string Result::get_MEA_structure() { return this->MEA_structure; }
 pf_t Result::get_MEA() { return this->MEA; }
 std::string Result::get_centroid_structure() { return this->centroid_structure; }
 pf_t Result::get_distance() { return this->distance; }
-std::string Result::get_fatgraph() { return this->fatgraph; }
-pf_t Result::get_fatgraph_frequency() { return this->fatgraph_frequency; }
+int Result::get_fatgraph_num() { return this->fatgraph_num; }
 pf_t Result::get_frequency() { return this->frequency; }
 pf_t Result::get_diversity() { return this->diversity; }
