@@ -5,8 +5,7 @@ Software implementation of CParty.
 CParty is an algorithm for computing the conditional partition function for density-2 RNA pseudoknots.
 
 #### Cite: 
-Trinity, Luke, Sebastian Will, Yann Ponty, Ulrike Stege, and Hosna Jabbari. "CParty: Conditional partition function for density-2 RNA pseudoknots." bioRxiv (2023): 2023-05.
-https://doi.org/10.1101/2023.05.16.541023 
+Mateo Gray, Luke Trinity, Ulrike Stege, Yann Ponty, Sebastian Will, Hosna Jabbari, CParty: hierarchically constrained partition function of RNA pseudoknots, Bioinformatics, Volume 41, Issue 1, January 2025, btae748, https://doi.org/10.1093/bioinformatics/btae748 
 
 #### Supported OS: 
 Linux 
