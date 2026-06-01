@@ -170,11 +170,24 @@ int main(int argc, char *argv[]) {
     if (restricted != "") validateStructure(seq, restricted);
     if (pk_free) if (restricted == "") restricted = std::string(n,'.');
 
-    std::string file = args_info.paramFile_given ? args_info.paramFile_arg : "params/rna_DirksPierce09.par";
-    if (exists(file)) {
-        vrna_params_load(file.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
-    } else if (seq.find('T') != std::string::npos) {
-        vrna_params_load_DNA_Mathews2004();
+    if(args_info.paramFile_given){
+        std::string file = args_info.paramFile_arg;
+        if (exists(file)) vrna_params_load(file.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
+        else{
+            std::cerr << "Not a valid parameter file!" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        if (seq.find('T') != std::string::npos) {
+            vrna_params_load_DNA_Mathews2004();
+        } else{
+            std::string file = "params/rna_DirksPierce09.par";
+            if (exists(file)) vrna_params_load(file.c_str(), VRNA_PARAMETER_FORMAT_DEFAULT);
+            else{
+                std::cerr << "Not a valid parameter file!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
     }
 
     SHAPEData ShapeData(shapeFile,n);
