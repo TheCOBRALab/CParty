@@ -64,7 +64,11 @@ W_final_pf::W_final_pf(std::string &seq, std::string &MFE_structure,SHAPEData &S
 
 }
 
-W_final_pf::~W_final_pf() {}
+W_final_pf::~W_final_pf() {
+    free(exp_params_);
+	free(S_);
+	free(S1_);
+}
 
 void W_final_pf::exp_params_rescale(double mfe) {
     double e_per_nt, kT;
