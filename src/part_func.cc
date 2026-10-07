@@ -1636,7 +1636,7 @@ void W_final_pf::Sample_VPR(cand_pos_t i, cand_pos_t j, std::string &structure,
             break;
         }
         if (can_pair) {
-            V_temp = (get_energy_VP(i, k) * expcp_pen[k - i]);
+            V_temp = (get_energy_VP(i, k) * expcp_pen[j - k]);
             qt += V_temp;
             if (qt >= r) {
                 unpaired = true;
