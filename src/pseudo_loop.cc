@@ -264,7 +264,7 @@ void pseudo_loop::compute_VP(cand_pos_t i, cand_pos_t j, sparse_tree &tree) {
         if (tree.tree[k].pair < -1 && (tree.up[(k)-1] >= ((k) - (i)-1))) {
             // Hosna, April 6th, 2007
             // whenever we use get_borders we have to check for the correct values
-            cand_pos_t max_borders = std::max(bp_ij, B_ij) + 1;
+            cand_pos_t max_borders = std::max(bp_ij, B_ij);
             cand_pos_t edge_j = k + j - i - MAXLOOP - 2;
             max_borders = std::max({max_borders, edge_j});
             for (cand_pos_t l = j - 1; l > max_borders; --l) {
@@ -930,7 +930,7 @@ void pseudo_loop::back_track(std::string structure, minimum_fold *f, seq_interva
             if (tree.tree[k].pair < -1 && (tree.up[(k)-1] >= ((k) - (i)-1))) {
                 // Hosna, April 9th, 2007
                 // whenever we use get_borders we have to check for the correct values
-                cand_pos_t max_borders = std::max(bp_ij, B_ij) + 1;
+                cand_pos_t max_borders = std::max(bp_ij, B_ij);
                 cand_pos_t edge_j = k + j - i - MAXLOOP - 2;
                 max_borders = std::max({max_borders, edge_j});
                 for (cand_pos_t l = j - 1; l > max_borders; --l) {
